@@ -1,0 +1,2002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fallout 2D20 — Character Creator</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@300;400;600;700&family=VT323&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   ROOT VARIABLES & RESET
+═══════════════════════════════════════════════ */
+:root {
+  --amber: #f5a623;
+  --amber-dim: #c47d0e;
+  --amber-glow: rgba(245,166,35,0.12);
+  --amber-bright: #ffc04d;
+  --green: #39ff14;
+  --green-dim: #1a7a00;
+  --green-pale: rgba(57,255,20,0.08);
+  --dark: #0b0b08;
+  --darker: #060604;
+  --panel: #111109;
+  --panel2: #181814;
+  --panel3: #1f1f19;
+  --border: rgba(245,166,35,0.25);
+  --border-bright: rgba(245,166,35,0.5);
+  --text: #d4c4a0;
+  --text-dim: #8a7a5a;
+  --text-bright: #ede0c0;
+  --red: #e63232;
+  --red-dim: rgba(230,50,50,0.15);
+  --blue: #4ab3f4;
+  --step-inactive: rgba(245,166,35,0.2);
+  --step-active: var(--amber);
+  --step-done: var(--green);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { height: 100%; }
+
+body {
+  background: var(--darker);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* CRT overlay */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Vignette */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* ═══════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════ */
+#header {
+  position: sticky; top: 0; z-index: 500;
+  background: var(--panel);
+  border-bottom: 2px solid var(--amber);
+  box-shadow: 0 0 40px rgba(245,166,35,0.15);
+  padding: 0.5rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.hdr-pip {
+  width: 44px; height: 44px; flex-shrink: 0;
+}
+
+.hdr-titles { flex: 1; }
+.hdr-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--amber);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(245,166,35,0.4);
+  line-height: 1;
+}
+.hdr-sub {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  letter-spacing: 4px;
+  margin-top: 3px;
+}
+
+.hdr-actions { display: flex; gap: 0.5rem; margin-left: auto; }
+
+.btn {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { border-color: var(--amber); color: var(--amber); background: var(--amber-glow); }
+.btn.primary { border-color: var(--amber); color: var(--amber); background: var(--amber-glow); }
+.btn.primary:hover { background: rgba(245,166,35,0.2); box-shadow: 0 0 15px rgba(245,166,35,0.2); }
+.btn.green-btn { border-color: var(--green-dim); color: var(--green); background: var(--green-pale); }
+.btn.green-btn:hover { background: rgba(57,255,20,0.12); box-shadow: 0 0 15px rgba(57,255,20,0.15); }
+
+/* ═══════════════════════════════════════════════
+   STEP WIZARD
+═══════════════════════════════════════════════ */
+#step-bar {
+  background: var(--panel2);
+  border-bottom: 1px solid var(--border);
+  padding: 0.7rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.3rem 0.8rem;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.step-num {
+  width: 24px; height: 24px;
+  border: 1px solid var(--step-inactive);
+  color: var(--text-dim);
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.75rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.step-label {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  transition: color 0.2s;
+}
+
+.step-sep {
+  width: 24px; height: 1px;
+  background: var(--border);
+  flex-shrink: 0;
+  margin: 0 0.2rem;
+}
+
+.step:hover .step-label { color: var(--amber); }
+.step:hover .step-num { border-color: var(--amber); color: var(--amber); }
+
+.step.active .step-num { border-color: var(--amber); background: var(--amber-glow); color: var(--amber); box-shadow: 0 0 8px rgba(245,166,35,0.3); }
+.step.active .step-label { color: var(--amber); }
+
+.step.done .step-num { border-color: var(--green-dim); background: var(--green-pale); color: var(--green); }
+.step.done .step-label { color: var(--text); }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════ */
+#main {
+  display: flex;
+  min-height: calc(100vh - 110px);
+}
+
+/* Live character sheet panel */
+#char-panel {
+  width: 300px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  height: calc(100vh - 110px);
+  position: sticky;
+  top: 110px;
+  padding: 1.2rem 1rem;
+}
+
+#work-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem 2.5rem;
+  max-width: 800px;
+}
+
+.step-panel { display: none; animation: fadeIn 0.3s ease; }
+.step-panel.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════
+   TYPOGRAPHY
+═══════════════════════════════════════════════ */
+.section-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--amber);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-shadow: 0 0 20px rgba(245,166,35,0.3);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.section-desc {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin-bottom: 1.5rem;
+  font-style: italic;
+}
+
+h3 {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.95rem;
+  color: var(--amber);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin: 1.5rem 0 0.6rem;
+  display: flex; align-items: center; gap: 0.5rem;
+}
+
+h3::before { content: '//'; color: var(--amber-dim); font-size: 0.8rem; }
+
+p { font-size: 0.82rem; line-height: 1.7; color: var(--text); margin-bottom: 0.6rem; }
+
+label {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 0.3rem;
+}
+
+input[type="text"], input[type="number"], select, textarea {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.7rem;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  appearance: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--amber);
+  box-shadow: 0 0 10px rgba(245,166,35,0.1);
+}
+
+input[type="number"] { -moz-appearance: textfield; }
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+textarea { resize: vertical; min-height: 80px; }
+
+select option { background: var(--panel2); color: var(--text); }
+
+/* ═══════════════════════════════════════════════
+   FORM COMPONENTS
+═══════════════════════════════════════════════ */
+.form-row { display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.form-group { flex: 1; min-width: 150px; }
+.form-group.full { flex: 0 0 100%; }
+
+/* ═══════════════════════════════════════════════
+   SPECIAL ATTRIBUTES
+═══════════════════════════════════════════════ */
+.special-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+@media (max-width: 700px) {
+  .special-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+.attr-card {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  text-align: center;
+  padding: 0.6rem 0.3rem;
+  position: relative;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.attr-card:hover { border-color: var(--amber-dim); }
+
+.attr-letter {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--amber);
+  line-height: 1;
+  text-shadow: 0 0 12px rgba(245,166,35,0.4);
+}
+
+.attr-name {
+  font-size: 0.52rem;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  margin: 0.2rem 0;
+  text-transform: uppercase;
+}
+
+.attr-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+
+.attr-btn {
+  width: 22px; height: 22px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--amber);
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.1s;
+  line-height: 1;
+  font-family: monospace;
+}
+.attr-btn:hover { background: var(--amber-glow); border-color: var(--amber); }
+.attr-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.attr-val {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.1rem;
+  color: var(--text-bright);
+  min-width: 24px;
+  text-align: center;
+}
+
+.attr-bubbles {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.bubble {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  border: 1px solid var(--amber-dim);
+  background: transparent;
+  transition: background 0.15s;
+}
+.bubble.filled { background: var(--amber); box-shadow: 0 0 4px rgba(245,166,35,0.6); }
+
+.points-remaining {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  padding: 0.6rem 1rem;
+  text-align: center;
+  margin: 0.5rem 0 1rem;
+}
+.points-num {
+  font-family: 'VT323', monospace;
+  font-size: 2.5rem;
+  color: var(--amber);
+  line-height: 1;
+}
+.points-label { font-size: 0.65rem; color: var(--text-dim); letter-spacing: 3px; }
+
+/* ═══════════════════════════════════════════════
+   SKILLS
+═══════════════════════════════════════════════ */
+.skill-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid transparent;
+  transition: border-color 0.15s, background 0.15s;
+  margin-bottom: 0.2rem;
+}
+.skill-row:hover { border-color: var(--border); background: var(--amber-glow); }
+.skill-row.tagged { border-color: var(--green-dim); background: var(--green-pale); }
+
+.skill-name-col {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  min-width: 140px;
+  color: var(--text);
+}
+.skill-attr-col {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  min-width: 60px;
+}
+
+.skill-tag-btn {
+  width: 22px; height: 22px;
+  background: transparent;
+  border: 1px solid var(--green-dim);
+  color: var(--green-dim);
+  font-size: 0.65rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.skill-tag-btn.tagged { background: var(--green-pale); color: var(--green); border-color: var(--green); }
+.skill-tag-btn:hover { border-color: var(--green); color: var(--green); }
+
+.skill-rank-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+
+.rank-btn {
+  width: 20px; height: 20px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.1s;
+  font-family: monospace;
+  flex-shrink: 0;
+}
+.rank-btn:hover { border-color: var(--amber); color: var(--amber); background: var(--amber-glow); }
+.rank-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.rank-display {
+  display: flex;
+  gap: 3px;
+}
+.rank-pip {
+  width: 10px; height: 10px;
+  border: 1px solid var(--amber-dim);
+  background: transparent;
+  transition: background 0.1s;
+}
+.rank-pip.filled { background: var(--amber); box-shadow: 0 0 4px rgba(245,166,35,0.5); }
+
+.rank-val {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  min-width: 16px;
+  text-align: center;
+}
+
+.skill-points-bar {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  padding: 0.8rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.sp-label { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
+.sp-val { font-family: 'VT323', monospace; font-size: 2rem; color: var(--amber); line-height: 1; }
+.sp-track { flex: 1; height: 6px; background: rgba(245,166,35,0.1); position: relative; }
+.sp-fill { height: 100%; background: var(--amber); transition: width 0.2s; box-shadow: 0 0 6px rgba(245,166,35,0.4); }
+
+/* Tagged badge */
+.tag-badge {
+  display: inline-block;
+  background: var(--green-pale);
+  border: 1px solid var(--green-dim);
+  color: var(--green);
+  font-size: 0.58rem;
+  letter-spacing: 1px;
+  padding: 0.1rem 0.35rem;
+  text-transform: uppercase;
+  margin-left: 0.3rem;
+  vertical-align: middle;
+}
+
+/* ═══════════════════════════════════════════════
+   TRAITS & PERKS CARDS
+═══════════════════════════════════════════════ */
+.card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin: 0.8rem 0; }
+
+.selectable-card {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  user-select: none;
+}
+.selectable-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+  background: transparent;
+  transition: background 0.15s;
+}
+.selectable-card:hover { border-color: var(--amber-dim); background: var(--amber-glow); }
+.selectable-card:hover::before { background: var(--amber-dim); }
+.selectable-card.selected { border-color: var(--amber); background: var(--amber-glow); }
+.selectable-card.selected::before { background: var(--amber); }
+.selectable-card.selected .card-check { background: var(--amber); color: var(--dark); border-color: var(--amber); }
+
+.card-check {
+  position: absolute; top: 0.6rem; right: 0.6rem;
+  width: 18px; height: 18px;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem;
+  color: transparent;
+  transition: all 0.15s;
+}
+
+.card-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: 0.4rem;
+  padding-right: 1.5rem;
+}
+
+.card-body { font-size: 0.75rem; line-height: 1.6; color: var(--text-dim); }
+.card-body strong { color: var(--green); }
+.card-body em { color: var(--red); font-style: normal; }
+
+.selection-counter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.8rem;
+  margin-bottom: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+.counter-val { color: var(--amber); font-family: 'VT323', monospace; font-size: 1.4rem; line-height: 1; }
+
+/* ═══════════════════════════════════════════════
+   BACKGROUND / ORIGIN CARDS
+═══════════════════════════════════════════════ */
+.origin-card {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  padding: 1rem 1.2rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  margin-bottom: 0.6rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+.origin-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: transparent;
+  transition: background 0.15s;
+}
+.origin-card:hover { border-color: var(--amber-dim); background: var(--amber-glow); }
+.origin-card.selected { border-color: var(--amber); }
+.origin-card.selected .origin-icon { color: var(--amber); border-color: var(--amber); }
+
+.origin-icon {
+  width: 44px; height: 44px;
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  color: var(--text-dim);
+  transition: all 0.15s;
+}
+.origin-info { flex: 1; }
+.origin-name {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.9rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-bright);
+  margin-bottom: 0.2rem;
+}
+.origin-desc { font-size: 0.75rem; color: var(--text-dim); line-height: 1.5; }
+.origin-bonuses {
+  font-size: 0.68rem;
+  color: var(--green);
+  margin-top: 0.3rem;
+  letter-spacing: 0.5px;
+}
+
+/* ═══════════════════════════════════════════════
+   NAVIGATION BUTTONS
+═══════════════════════════════════════════════ */
+.step-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════════
+   LIVE CHARACTER SHEET (LEFT PANEL)
+═══════════════════════════════════════════════ */
+.sheet-header {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sheet-name {
+  font-family: 'Oswald', sans-serif;
+  font-size: 1.1rem;
+  color: var(--amber);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 0 10px rgba(245,166,35,0.3);
+  min-height: 1.5rem;
+}
+
+.sheet-origin { font-size: 0.68rem; color: var(--text-dim); letter-spacing: 2px; margin-top: 0.2rem; }
+
+.sheet-section { margin: 0.8rem 0; }
+.sheet-section-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 4px;
+  color: var(--amber);
+  opacity: 0.6;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(245,166,35,0.1);
+  padding-bottom: 0.2rem;
+}
+
+.mini-special { display: grid; grid-template-columns: repeat(7,1fr); gap: 3px; }
+.mini-attr {
+  background: var(--panel3);
+  text-align: center;
+  padding: 0.3rem 0.1rem;
+  border: 1px solid rgba(245,166,35,0.1);
+}
+.mini-attr-letter { font-family: 'Oswald',sans-serif; font-size:0.9rem; color:var(--amber); line-height:1; }
+.mini-attr-val { font-size: 0.7rem; color: var(--text); margin-top: 1px; }
+
+.derived-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(245,166,35,0.05);
+}
+.derived-label { color: var(--text-dim); }
+.derived-val { color: var(--text-bright); font-family: 'Oswald', sans-serif; letter-spacing: 1px; }
+
+.mini-skills {
+  font-size: 0.68rem;
+}
+.mini-skill-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.15rem 0;
+  border-bottom: 1px solid rgba(245,166,35,0.04);
+}
+.mini-skill-name { color: var(--text-dim); }
+.mini-skill-val { color: var(--amber); }
+.mini-skill-tagged { color: var(--green); }
+
+.sheet-traits-list { font-size: 0.68rem; }
+.sheet-trait { color: var(--text-dim); padding: 0.15rem 0; border-bottom: 1px solid rgba(245,166,35,0.05); }
+
+/* ═══════════════════════════════════════════════
+   GEAR SELECTION
+═══════════════════════════════════════════════ */
+.gear-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin: 0.8rem 0; }
+
+.gear-card {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+.gear-card:hover { border-color: var(--amber-dim); background: var(--amber-glow); }
+.gear-card.selected { border-color: var(--amber); background: var(--amber-glow); }
+.gear-card.selected .gear-check { color: var(--amber); }
+
+.gear-check { position: absolute; top: 0.5rem; right: 0.6rem; color: transparent; font-size: 0.75rem; }
+.gear-name { font-family: 'Oswald',sans-serif; font-size:0.8rem; color:var(--text-bright); letter-spacing:1px; text-transform:uppercase; margin-bottom:0.2rem; padding-right:1rem; }
+.gear-stats { font-size:0.68rem; color:var(--text-dim); line-height:1.5; }
+.gear-stats span { color: var(--amber); }
+
+/* ═══════════════════════════════════════════════
+   SUMMARY PAGE
+═══════════════════════════════════════════════ */
+.summary-sheet {
+  background: var(--panel2);
+  border: 2px solid var(--amber);
+  padding: 2rem;
+  box-shadow: 0 0 40px rgba(245,166,35,0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-sheet::before {
+  content: 'VAULT-TEC CERTIFIED';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%) rotate(-30deg);
+  font-family: 'Oswald', sans-serif;
+  font-size: 5rem;
+  font-weight: 700;
+  color: rgba(245,166,35,0.04);
+  letter-spacing: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.sum-header {
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.sum-name {
+  font-family: 'VT323', monospace;
+  font-size: 3rem;
+  color: var(--amber);
+  text-shadow: 0 0 20px rgba(245,166,35,0.4);
+  letter-spacing: 4px;
+  line-height: 1;
+}
+
+.sum-subtitle { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 4px; margin-top: 0.3rem; }
+
+.sum-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+.sum-block-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.65rem;
+  color: var(--amber);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  opacity: 0.7;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.6rem;
+}
+
+.sum-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  padding: 0.2rem 0;
+}
+.sum-key { color: var(--text-dim); }
+.sum-value { color: var(--text-bright); }
+.sum-value.amber { color: var(--amber); font-family: 'Oswald', sans-serif; }
+.sum-value.green { color: var(--green); }
+
+.print-notice {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+}
+
+/* ═══════════════════════════════════════════════
+   CALLOUTS & HELPERS
+═══════════════════════════════════════════════ */
+.callout {
+  border: 1px solid;
+  padding: 0.7rem 1rem;
+  margin: 0.8rem 0;
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+.callout-lbl {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+.callout.tip { border-color: var(--green-dim); background: var(--green-pale); }
+.callout.tip .callout-lbl { color: var(--green); }
+.callout.info { border-color: var(--border); background: var(--amber-glow); }
+.callout.info .callout-lbl { color: var(--amber); }
+
+hr { border: none; border-top: 1px solid var(--border); margin: 1.2rem 0; }
+
+/* Bonus pip styles */
+.rank-pip.tag-bonus-pip { background: var(--green); box-shadow: 0 0 4px rgba(57,255,20,0.5); border-color: var(--green-dim); }
+.rank-pip.origin-bonus-pip { background: #4ab3f4; box-shadow: 0 0 4px rgba(74,179,244,0.5); border-color: rgba(74,179,244,0.4); }
+.bubble.bonus-pip { background: var(--green); box-shadow: 0 0 5px rgba(57,255,20,0.6); }
+.attr-card.attr-buffed { border-color: rgba(57,255,20,0.35); }
+.attr-card.attr-nerfed { border-color: rgba(230,50,50,0.35); }
+.skill-row.skill-buffed { border-color: rgba(57,255,20,0.2) !important; }
+.skill-row.skill-nerfed { background: rgba(230,50,50,0.04) !important; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--darker); }
+::-webkit-scrollbar-thumb { background: var(--amber-dim); }
+
+/* ═══════════════════════════════════════════════
+   PRINT
+═══════════════════════════════════════════════ */
+@media print {
+  body::before, body::after { display: none; }
+  #header, #step-bar, #char-panel, .step-nav { display: none; }
+  #work-area { padding: 0; max-width: 100%; }
+  .step-panel { display: block !important; }
+  .summary-sheet { border-color: #333; box-shadow: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════ -->
+<div id="header">
+  <svg class="hdr-pip" viewBox="0 0 44 44" fill="none">
+    <rect x="3" y="7" width="38" height="30" rx="4" stroke="#f5a623" stroke-width="1.8" fill="none"/>
+    <rect x="7" y="11" width="18" height="14" rx="1" fill="#0a0a08" stroke="#39ff14" stroke-width="1.2"/>
+    <circle cx="16" cy="18" r="3.5" stroke="#39ff14" stroke-width="1.2" fill="none"/>
+    <circle cx="16" cy="18" r="1.3" fill="#39ff14"/>
+    <rect x="27" y="12" width="10" height="2" rx="1" fill="#f5a623"/>
+    <rect x="27" y="16" width="7" height="2" rx="1" fill="#f5a623" opacity="0.5"/>
+    <rect x="27" y="20" width="10" height="2" rx="1" fill="#f5a623"/>
+    <rect x="27" y="24" width="5" height="2" rx="1" fill="#f5a623" opacity="0.5"/>
+    <rect x="7" y="28" width="4" height="4" rx="2" fill="#39ff14"/>
+    <rect x="13" y="28" width="4" height="4" rx="2" fill="#39ff14" opacity="0.35"/>
+    <rect x="19" y="28" width="4" height="4" rx="2" fill="#39ff14" opacity="0.35"/>
+  </svg>
+  <div class="hdr-titles">
+    <div class="hdr-title">CHARACTER CREATOR</div>
+    <div class="hdr-sub">FALLOUT 2D20 // MODIPHIUS ENTERTAINMENT // PIP-BOY MODEL 3000</div>
+  </div>
+  <div class="hdr-actions">
+    <button class="btn" onclick="resetCharacter()">RESET</button>
+    <button class="btn primary" onclick="exportCharacter()">EXPORT JSON</button>
+    <button class="btn green-btn" onclick="printCharacter()">PRINT SHEET</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     STEP BAR
+══════════════════════════════════════════════════ -->
+<div id="step-bar">
+  <div class="step active" id="step-0" onclick="goStep(0)">
+    <div class="step-num">1</div>
+    <div class="step-label">Identity</div>
+  </div>
+  <div class="step-sep"></div>
+  <div class="step" id="step-1" onclick="goStep(1)">
+    <div class="step-num">2</div>
+    <div class="step-label">Origin</div>
+  </div>
+  <div class="step-sep"></div>
+  <div class="step" id="step-2" onclick="goStep(2)">
+    <div class="step-num">3</div>
+    <div class="step-label">S.P.E.C.I.A.L.</div>
+  </div>
+  <div class="step-sep"></div>
+  <div class="step" id="step-3" onclick="goStep(3)">
+    <div class="step-num">4</div>
+    <div class="step-label">Skills</div>
+  </div>
+  <div class="step-sep"></div>
+  <div class="step" id="step-4" onclick="goStep(4)">
+    <div class="step-num">5</div>
+    <div class="step-label">Traits</div>
+  </div>
+  <div class="step-sep"></div>
+  <div class="step" id="step-5" onclick="goStep(5)">
+    <div class="step-num">6</div>
+    <div class="step-label">Perks</div>
+  </div>
+  <div class="step-sep"></div>
+  <div class="step" id="step-6" onclick="goStep(6)">
+    <div class="step-num">7</div>
+    <div class="step-label">Equipment</div>
+  </div>
+  <div class="step-sep"></div>
+  <div class="step" id="step-7" onclick="goStep(7)">
+    <div class="step-num">8</div>
+    <div class="step-label">Summary</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     MAIN
+══════════════════════════════════════════════════ -->
+<div id="main">
+
+  <!-- LIVE CHAR PANEL -->
+  <div id="char-panel">
+    <div class="sheet-header">
+      <div class="sheet-name" id="sheet-name">UNKNOWN SURVIVOR</div>
+      <div class="sheet-origin" id="sheet-origin">— SELECT AN ORIGIN —</div>
+    </div>
+
+    <div class="sheet-section">
+      <div class="sheet-section-title">S.P.E.C.I.A.L.</div>
+      <div class="mini-special" id="mini-special">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <div class="sheet-section">
+      <div class="sheet-section-title">Derived Stats</div>
+      <div id="derived-stats"></div>
+    </div>
+
+    <div class="sheet-section">
+      <div class="sheet-section-title">Skills (non-zero)</div>
+      <div class="mini-skills" id="mini-skills-list"></div>
+    </div>
+
+    <div class="sheet-section">
+      <div class="sheet-section-title">Traits</div>
+      <div class="sheet-traits-list" id="mini-traits"></div>
+    </div>
+
+    <div class="sheet-section">
+      <div class="sheet-section-title">Starting Perk</div>
+      <div class="sheet-traits-list" id="mini-perk" style="color:var(--text-dim);font-size:0.68rem;">None selected</div>
+    </div>
+  </div>
+
+  <!-- WORK AREA -->
+  <div id="work-area">
+
+    <!-- ─── STEP 1: IDENTITY ─── -->
+    <div class="step-panel active" id="panel-0">
+      <div class="section-title">IDENTITY</div>
+      <div class="section-desc">// ESTABLISHING SURVIVOR PROFILE — ENTER BIOGRAPHICAL DATA //</div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Character Name</label>
+          <input type="text" id="char-name" placeholder="e.g. Nora, MacCready, Vault-Tec Rep…" oninput="updateIdentity()">
+        </div>
+        <div class="form-group">
+          <label>Player Name</label>
+          <input type="text" id="player-name" placeholder="Your name">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Gender / Pronouns</label>
+          <input type="text" id="char-gender" placeholder="e.g. He/Him, She/Her, They/Them">
+        </div>
+        <div class="form-group">
+          <label>Age</label>
+          <input type="number" id="char-age" placeholder="e.g. 32" min="1" max="999" oninput="updateIdentity()">
+        </div>
+        <div class="form-group">
+          <label>Era / Setting</label>
+          <select id="char-era" onchange="updateIdentity()">
+            <option value="">Select era…</option>
+            <option value="2077">Pre-War (2077)</option>
+            <option value="2161">Fallout 1 (2161)</option>
+            <option value="2241">Fallout 2 (2241)</option>
+            <option value="2277">Fallout 3 (2277)</option>
+            <option value="2281">New Vegas (2281)</option>
+            <option value="2287">Fallout 4 (2287)</option>
+            <option value="Custom">Custom</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Appearance</label>
+          <textarea id="char-appearance" placeholder="Describe your character's physical appearance — height, build, notable features, scars, hair, clothing style…"></textarea>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group full">
+          <label>Backstory / Notes</label>
+          <textarea id="char-backstory" placeholder="Where were they before the bombs? What drives them? What do they fear? What have they lost?"></textarea>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-lbl">Pip-Boy Tip</div>
+        All fields are optional — fill in as much or as little as you like. You can always edit this later.
+      </div>
+
+      <div class="step-nav">
+        <div></div>
+        <button class="btn primary" onclick="goStep(1)">NEXT: ORIGIN ▶</button>
+      </div>
+    </div>
+
+    <!-- ─── STEP 2: ORIGIN ─── -->
+    <div class="step-panel" id="panel-1">
+      <div class="section-title">ORIGIN</div>
+      <div class="section-desc">// SELECT YOUR BACKGROUND — DEFINES STARTING SKILLS AND EQUIPMENT //</div>
+
+      <p>Your origin determines where you came from before the main story begins. Each background provides a <strong>bonus skill rank</strong>, a special <strong>starting item</strong>, and influences how the world perceives you.</p>
+
+      <div id="origin-list">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="step-nav">
+        <button class="btn" onclick="goStep(0)">◀ BACK</button>
+        <button class="btn primary" onclick="goStep(2)">NEXT: S.P.E.C.I.A.L. ▶</button>
+      </div>
+    </div>
+
+    <!-- ─── STEP 3: SPECIAL ─── -->
+    <div class="step-panel" id="panel-2">
+      <div class="section-title">S.P.E.C.I.A.L.</div>
+      <div class="section-desc">// DISTRIBUTE 5 ATTRIBUTE POINTS — BASE VALUE 5, MIN 4, MAX 12 //</div>
+
+      <p>All attributes start at <strong>5</strong>. Distribute <strong>5 additional points</strong> among them. No attribute may exceed <strong>12</strong>, and none may fall below <strong>4</strong>. Some Traits and Origins may adjust these limits.</p>
+
+      <div class="points-remaining">
+        <div class="points-num" id="attr-pts-display">5</div>
+        <div class="points-label">ATTRIBUTE POINTS REMAINING</div>
+      </div>
+
+      <div class="special-grid" id="special-grid">
+        <!-- filled by JS -->
+      </div>
+
+      <hr>
+      <h3>Derived Statistics</h3>
+      <div id="derived-table" style="font-size:0.8rem;"></div>
+
+      <div class="step-nav">
+        <button class="btn" onclick="goStep(1)">◀ BACK</button>
+        <button class="btn primary" onclick="goStep(3)">NEXT: SKILLS ▶</button>
+      </div>
+    </div>
+
+    <!-- ─── STEP 4: SKILLS ─── -->
+    <div class="step-panel" id="panel-3">
+      <div class="section-title">SKILLS</div>
+      <div class="section-desc">// ALLOCATE SKILL POINTS AND SELECT 3 TAGGED SKILLS //</div>
+
+      <div class="callout info">
+        <div class="callout-lbl">Skill Points</div>
+        You receive <strong id="sp-total-display">—</strong> Skill Points (Intelligence × 2). Spend them to increase skill ranks (max rank 2 at creation). Also choose <strong>3 Tagged Skills</strong> — each receives a free +2 ranks on top of anything spent.
+      </div>
+
+      <div class="skill-points-bar">
+        <div>
+          <div class="sp-label">POINTS REMAINING</div>
+          <div class="sp-val" id="sp-remaining">0</div>
+        </div>
+        <div class="sp-track">
+          <div class="sp-fill" id="sp-fill" style="width:100%"></div>
+        </div>
+        <div>
+          <div class="sp-label">TAGGED</div>
+          <div class="sp-val" id="tagged-count" style="color:var(--green);">0/3</div>
+        </div>
+      </div>
+
+      <div id="skills-list">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="step-nav">
+        <button class="btn" onclick="goStep(2)">◀ BACK</button>
+        <button class="btn primary" onclick="goStep(4)">NEXT: TRAITS ▶</button>
+      </div>
+    </div>
+
+    <!-- ─── STEP 5: TRAITS ─── -->
+    <div class="step-panel" id="panel-4">
+      <div class="section-title">TRAITS</div>
+      <div class="section-desc">// OPTIONAL — SELECT UP TO 2 TRAITS (EACH HAS A BENEFIT AND DRAWBACK) //</div>
+
+      <p>Traits represent intrinsic qualities of your character — genetic, psychological, or circumstantial. Each Trait provides a meaningful <strong style="color:var(--green);">benefit</strong> and an equally meaningful <em style="color:var(--red);">drawback</em>. You may select <strong>0, 1, or 2 Traits</strong>.</p>
+
+      <div class="selection-counter">
+        <div class="counter-val" id="trait-count">0</div>
+        <span>/ 2 Traits Selected</span>
+      </div>
+
+      <div class="card-grid" id="traits-grid">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="step-nav">
+        <button class="btn" onclick="goStep(3)">◀ BACK</button>
+        <button class="btn primary" onclick="goStep(5)">NEXT: PERKS ▶</button>
+      </div>
+    </div>
+
+    <!-- ─── STEP 6: PERKS ─── -->
+    <div class="step-panel" id="panel-5">
+      <div class="section-title">STARTING PERK</div>
+      <div class="section-desc">// SELECT 1 STARTING PERK — MEETS ALL PREREQUISITES AT CHARACTER CREATION //</div>
+
+      <p>Every new character begins with <strong>1 Perk</strong>. The perks listed here are the starter-tier options available regardless of your attribute scores. Additional Perks are earned with XP during play.</p>
+
+      <div class="selection-counter">
+        <div class="counter-val" id="perk-count">0</div>
+        <span>/ 1 Perk Selected</span>
+      </div>
+
+      <div class="card-grid" id="perks-grid">
+        <!-- filled by JS -->
+      </div>
+
+      <div class="step-nav">
+        <button class="btn" onclick="goStep(4)">◀ BACK</button>
+        <button class="btn primary" onclick="goStep(6)">NEXT: EQUIPMENT ▶</button>
+      </div>
+    </div>
+
+    <!-- ─── STEP 7: EQUIPMENT ─── -->
+    <div class="step-panel" id="panel-6">
+      <div class="section-title">STARTING EQUIPMENT</div>
+      <div class="section-desc">// CHOOSE YOUR LOADOUT — SELECT 1 WEAPON, 1 ARMOR, AND A PACK //</div>
+
+      <p>Every survivor starts with basic gear. Your origin provides one item automatically; here you choose your <strong>weapon</strong>, <strong>armor</strong>, and <strong>supply pack</strong>.</p>
+
+      <h3>Weapon</h3>
+      <div class="gear-grid" id="weapon-grid"></div>
+
+      <h3>Armor</h3>
+      <div class="gear-grid" id="armor-grid"></div>
+
+      <h3>Supply Pack</h3>
+      <div class="gear-grid" id="pack-grid"></div>
+
+      <div class="step-nav">
+        <button class="btn" onclick="goStep(5)">◀ BACK</button>
+        <button class="btn primary" onclick="buildSummary(); goStep(7)">FINISH: VIEW SHEET ▶</button>
+      </div>
+    </div>
+
+    <!-- ─── STEP 8: SUMMARY ─── -->
+    <div class="step-panel" id="panel-7">
+      <div class="section-title">CHARACTER SHEET</div>
+      <div class="section-desc">// VAULT-TEC CERTIFIED — YOUR SURVIVOR IS READY FOR THE WASTELAND //</div>
+
+      <div class="summary-sheet" id="summary-sheet">
+        <!-- built by JS -->
+      </div>
+
+      <div class="print-notice">
+        USE THE "PRINT SHEET" BUTTON ABOVE TO SAVE AS PDF // RIGHT-CLICK → SAVE PAGE AS TO SAVE HTML
+      </div>
+
+      <div class="step-nav">
+        <button class="btn" onclick="goStep(6)">◀ BACK</button>
+        <div style="display:flex;gap:0.5rem;">
+          <button class="btn primary" onclick="exportCharacter()">EXPORT JSON</button>
+          <button class="btn green-btn" onclick="printCharacter()">PRINT SHEET</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /work-area -->
+</div><!-- /main -->
+
+<!-- ══════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════ -->
+<script>
+// ═══════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════
+
+const SPECIAL_ATTRS = [
+  { key:'S', name:'Strength',     desc:'Melee power, carry weight' },
+  { key:'P', name:'Perception',   desc:'Awareness, ranged accuracy' },
+  { key:'E', name:'Endurance',    desc:'HP, radiation resistance' },
+  { key:'C', name:'Charisma',     desc:'Social skills, companions' },
+  { key:'I', name:'Intelligence', desc:'Science, Medicine, skill pts' },
+  { key:'A', name:'Agility',      desc:'Initiative, Sneak, actions' },
+  { key:'L', name:'Luck',         desc:'Luck pool, fortune' }
+];
+
+const ORIGINS = [
+  { id:'vault_dweller', icon:'🏛️', name:'Vault Dweller',
+    desc:'Raised in one of Vault-Tec\'s underground shelters. Educated, sheltered, and naive about surface dangers — but well-equipped with pre-war knowledge.',
+    bonuses:'+1 Science, +1 Medicine | Starting Item: Vault Jumpsuit, Pip-Boy',
+    skillBonuses:{ science:1, medicine:1 }, attrBonuses:{} },
+  { id:'wastelander',   icon:'☢️', name:'Wastelander',
+    desc:'Born and bred on the surface, surviving since birth. Tough, resourceful, and intimately familiar with the dangers of the open Wasteland.',
+    bonuses:'+1 Survival, +1 Athletics | Starting Item: Leather Armor, Hunting Rifle',
+    skillBonuses:{ survival:1, athletics:1 }, attrBonuses:{} },
+  { id:'caravan_hand',  icon:'🐎', name:'Caravan Hand',
+    desc:'Traveled the trade routes between settlements, guarding caravans and learning the value of a good deal and a steady trigger finger.',
+    bonuses:'+1 Barter, +1 Guns | Starting Item: Caravan Supplies, Pipe Pistol',
+    skillBonuses:{ barter:1, guns:1 }, attrBonuses:{} },
+  { id:'raider',        icon:'💀', name:'Ex-Raider',
+    desc:'Once part of a raider gang, you\'ve since left — or survived its destruction. You know how predators think because you were one.',
+    bonuses:'+1 Persuasion, +1 Melee Weapons | Starting Item: Spiked Armor, Combat Knife',
+    skillBonuses:{ persuasion:1, melee_weapons:1 }, attrBonuses:{} },
+  { id:'scribe',        icon:'📜', name:'Brotherhood Scribe',
+    desc:'A scholar of the Brotherhood of Steel, dedicated to preserving pre-war technology. Your knowledge is your greatest weapon.',
+    bonuses:'+1 Science, +1 Repair | Starting Item: Laser Pistol, Field Research Kit',
+    skillBonuses:{ science:1, repair:1 }, attrBonuses:{} },
+  { id:'tribal',        icon:'🌿', name:'Tribal',
+    desc:'From a small tribe beyond the reach of civilization. Connected to nature and tradition, your people\'s ancient knowledge keeps you alive.',
+    bonuses:'+1 Survival, +1 Unarmed | Starting Item: Tribal Armor, Spear',
+    skillBonuses:{ survival:1, unarmed:1 }, attrBonuses:{} },
+  { id:'ghoul',         icon:'☣️', name:'Ghoul',
+    desc:'Exposed to catastrophic radiation, your body has been permanently altered. Ancient by Wasteland standards, you\'ve seen civilizations rise and fall.',
+    bonuses:'+2 Endurance | Starting Item: Tattered Pre-War Suit',
+    skillBonuses:{}, attrBonuses:{ E:2 } },
+  { id:'synth',         icon:'🤖', name:'Synth (Gen 3)',
+    desc:'A synthetic human created by the Institute. You may not know your own origin. Your nature raises questions about identity, consciousness, and freedom.',
+    bonuses:'+1 Athletics, +1 Sneak | Starting Item: Institute Jumpsuit, 10mm Pistol',
+    skillBonuses:{ athletics:1, sneak:1 }, attrBonuses:{} },
+];
+
+const SKILLS_DATA = [
+  { id:'athletics',     name:'Athletics',       attr:'STR/AGI' },
+  { id:'barter',        name:'Barter',          attr:'CHR' },
+  { id:'big_guns',      name:'Big Guns',        attr:'STR' },
+  { id:'energy_weapons',name:'Energy Weapons',  attr:'PER' },
+  { id:'explosives',    name:'Explosives',      attr:'PER' },
+  { id:'guns',          name:'Guns',            attr:'AGI/PER' },
+  { id:'lockpick',      name:'Lockpick',        attr:'PER' },
+  { id:'medicine',      name:'Medicine',        attr:'INT' },
+  { id:'melee_weapons', name:'Melee Weapons',   attr:'STR' },
+  { id:'persuasion',    name:'Persuasion',      attr:'CHR' },
+  { id:'repair',        name:'Repair',          attr:'INT' },
+  { id:'science',       name:'Science',         attr:'INT' },
+  { id:'sneak',         name:'Sneak',           attr:'AGI' },
+  { id:'survival',      name:'Survival',        attr:'END/PER' },
+  { id:'unarmed',       name:'Unarmed',         attr:'STR/AGI' },
+];
+
+const TRAITS_DATA = [
+  { id:'small_frame',  name:'Small Frame',
+    benefit:'Agility +1; lighter carry penalties', drawback:'Limb crit threshold –1; injuries worsen faster',
+    attrBonuses:{ A:1 }, skillBonuses:{}, skillPenalties:{} },
+  { id:'good_natured', name:'Good Natured',
+    benefit:'+1 rank: Medicine, Science, Repair, Barter, Persuasion', drawback:'–1 rank: all combat skills (Guns, Melee Weapons, Energy Weapons, Explosives, Big Guns, Unarmed)',
+    attrBonuses:{}, skillBonuses:{ medicine:1, science:1, repair:1, barter:1, persuasion:1 },
+    skillPenalties:{ guns:-1, melee_weapons:-1, energy_weapons:-1, explosives:-1, big_guns:-1, unarmed:-1 } },
+  { id:'gifted',       name:'Gifted',
+    benefit:'+1 to ALL S.P.E.C.I.A.L. attributes', drawback:'Lose 5 starting skill points; skills cost +50 XP per rank',
+    attrBonuses:{ S:1, P:1, E:1, C:1, I:1, A:1, L:1 }, skillBonuses:{}, skillPenalties:{}, spPenalty:5 },
+  { id:'kamikaze',     name:'Kamikaze',
+    benefit:'+2 bonus successes on Initiative rolls; always win ties', drawback:'Cannot take Reactions; lose access to the Dodge action',
+    attrBonuses:{}, skillBonuses:{}, skillPenalties:{} },
+  { id:'trigger_disc', name:'Trigger Discipline',
+    benefit:'Ranged Focus rolls never generate Complications', drawback:'–1 die on ALL ranged attack rolls',
+    attrBonuses:{}, skillBonuses:{}, skillPenalties:{} },
+  { id:'fast_meta',    name:'Fast Metabolism',
+    benefit:'Stimpaks restore double HP; chems heal faster', drawback:'RadAway removes half the normal Rads; slower detox',
+    attrBonuses:{}, skillBonuses:{}, skillPenalties:{} },
+  { id:'bruiser',      name:'Bruiser',
+    benefit:'Strength +2; melee damage bonus increased', drawback:'Agility –2; slower movement and Initiative',
+    attrBonuses:{ S:2, A:-2 }, skillBonuses:{}, skillPenalties:{} },
+  { id:'finesse',      name:'Finesse',
+    benefit:'All weapons gain the Piercing 1 quality', drawback:'All weapon damage reduced by 1 CD (minimum 1)',
+    attrBonuses:{}, skillBonuses:{}, skillPenalties:{} },
+  { id:'chem_reliant', name:'Chem Reliant',
+    benefit:'Chems last twice as long; double duration effects', drawback:'Addiction chance doubled; withdrawal is more severe',
+    attrBonuses:{}, skillBonuses:{}, skillPenalties:{} },
+  { id:'four_eyes',    name:'Four Eyes',
+    benefit:'Perception +1 when wearing glasses (conditional)', drawback:'Perception –1 without corrective eyewear',
+    attrBonuses:{}, skillBonuses:{}, skillPenalties:{} },
+];
+
+const PERKS_DATA = [
+  { id:'iron_fist',    name:'Iron Fist',        desc:'Unarmed attacks deal +1 CD damage. Effects trigger on Effect + 1 face.' },
+  { id:'toughness',    name:'Toughness',        desc:'Gain +1 Physical Resistance permanently, even without armor worn.' },
+  { id:'medic_1',      name:'Medic',            desc:'Stimpaks restore 2 bonus HP. First aid tests are Difficulty 1 instead of 2.' },
+  { id:'sniper_eye',   name:'Eagle Eye',        desc:'Ignore the first +1 Difficulty from range (medium counts as close, etc.).' },
+  { id:'fast_hands',   name:'Quick Draw',       desc:'Drawing and holstering weapons no longer costs a Minor Action.' },
+  { id:'scrounger',    name:'Scrounger',        desc:'When searching for ammo or supplies, roll 1 extra die and take the best results.' },
+  { id:'rad_resist',   name:'Rad Resistant',    desc:'+2 Rad Resistance permanently. RadAway treatments restore double Rads.' },
+  { id:'armorer_1',    name:'Armorer',          desc:'Armor Repair tests are Difficulty 1. Repaired armor gains +1 PR temporarily.' },
+  { id:'gunslinger',   name:'Gunslinger',       desc:'When using a pistol one-handed, reduce attack Difficulty by 1.' },
+  { id:'mysterious',   name:'Lady Killer / Black Widow', desc:'Social tests against the opposite gender are Difficulty 1 easier.' },
+  { id:'animal_friend',name:'Animal Friend',   desc:'Wild animals do not attack unless provoked. Difficulty 2 Survival to command one simple action.' },
+  { id:'strong_back',  name:'Strong Back',      desc:'+50 lbs carry weight. You are never Slowed from encumbrance alone.' },
+];
+
+const WEAPONS_DATA = [
+  { id:'pipe_pistol',  name:'Pipe Pistol',    stats:'Dmg: 2CD | Range: Close | Qual: Unreliable' },
+  { id:'10mm',         name:'10mm Pistol',    stats:'Dmg: 3CD | Range: Close-Med | Qual: Reliable' },
+  { id:'hunting_rifle',name:'Hunting Rifle',  stats:'Dmg: 4CD | Range: Long | Qual: Bolt-Action' },
+  { id:'combat_knife', name:'Combat Knife',   stats:'Dmg: 2CD+1 | Range: Reach | Qual: Vicious' },
+  { id:'shotgun',      name:'Sawn-Off Shotgun',stats:'Dmg: 5CD | Range: Close | Qual: Knockdown, Spread' },
+  { id:'lead_pipe',    name:'Lead Pipe',      stats:'Dmg: 3CD | Range: Reach | Qual: Stun' },
+];
+
+const ARMOR_DATA = [
+  { id:'vault_suit',   name:'Vault Jumpsuit', stats:'PR: 1 | ER: 1 | Weight: 3 | Tags: Lightweight' },
+  { id:'leather',      name:'Leather Armor',  stats:'PR: 2 | ER: 1 | Weight: 10 | Tags: Common' },
+  { id:'metal',        name:'Metal Armor',    stats:'PR: 4 | ER: 1 | Weight: 25 | Tags: Heavy, Noisy' },
+  { id:'combat',       name:'Combat Armor',   stats:'PR: 3 | ER: 2 | Weight: 18 | Tags: Military' },
+  { id:'raider',       name:'Raider Armor',   stats:'PR: 2 | ER: 0 | Weight: 15 | Tags: Intimidating' },
+  { id:'robes',        name:'Robes/Coat',     stats:'PR: 0 | ER: 0 | Weight: 2 | Tags: Concealable, +1 Sneak' },
+];
+
+const PACKS_DATA = [
+  { id:'scavenger', name:'Scavenger Pack', stats:'50 Caps, 3× Stimpak, 1× RadAway, 50× .45 ammo, Lockpick kit' },
+  { id:'medic_p',   name:'Medic Pack',     stats:'30 Caps, 5× Stimpak, 2× RadAway, 1× Antibiotics, Doctor\'s Bag' },
+  { id:'trader',    name:'Trader Pack',    stats:'150 Caps, Caravan supplies, 2× Stimpak, 1× Water (purified ×4)' },
+  { id:'soldier',   name:'Soldier Pack',   stats:'20 Caps, 100× ammo, 2× Stimpak, Frag Grenade ×2, Military Ration ×3' },
+];
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+
+let char = {
+  name: '', player: '', gender: '', age: '', era: '', appearance: '', backstory: '',
+  origin: null,
+  attrs: { S:5, P:5, E:5, C:5, I:5, A:5, L:5 },
+  attrPointsLeft: 5,
+  skills: {},      // id → rank (0–2 spent; display includes tagged bonus)
+  tagged: [],      // array of skill ids (max 3)
+  skillPointsLeft: 0,
+  skillPointsTotal: 0,
+  traits: [],      // max 2
+  perk: null,
+  weapon: null,
+  armor: null,
+  pack: null,
+};
+
+// Initialize skills
+SKILLS_DATA.forEach(s => { char.skills[s.id] = 0; });
+
+let currentStep = 0;
+
+// ═══════════════════════════════════════
+// STEP NAVIGATION
+// ═══════════════════════════════════════
+
+function goStep(n) {
+  // Hide all panels
+  document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.step').forEach((s,i) => {
+    s.classList.remove('active');
+    if (i < n) s.classList.add('done');
+    else if (i === n) { s.classList.add('active'); s.classList.remove('done'); }
+    else s.classList.remove('done');
+  });
+  document.getElementById('panel-' + n).classList.add('active');
+  document.getElementById('work-area').scrollTo(0, 0);
+  currentStep = n;
+
+  if (n === 3) { computeSkillPoints(); renderSkills(); }
+  if (n === 7) buildSummary();
+  updateLivePanel();
+}
+
+// ═══════════════════════════════════════
+// STEP 1: IDENTITY
+// ═══════════════════════════════════════
+
+function updateIdentity() {
+  char.name    = document.getElementById('char-name').value.trim();
+  char.player  = document.getElementById('player-name').value.trim();
+  char.gender  = document.getElementById('char-gender').value.trim();
+  char.age     = document.getElementById('char-age').value;
+  char.era     = document.getElementById('char-era').value;
+  document.getElementById('sheet-name').textContent = char.name || 'UNKNOWN SURVIVOR';
+  updateLivePanel();
+}
+
+// ═══════════════════════════════════════
+// STEP 2: ORIGIN
+// ═══════════════════════════════════════
+
+function renderOrigins() {
+  const list = document.getElementById('origin-list');
+  list.innerHTML = ORIGINS.map(o => `
+    <div class="origin-card ${char.origin === o.id ? 'selected' : ''}" onclick="selectOrigin('${o.id}')">
+      <div class="origin-icon">${o.icon}</div>
+      <div class="origin-info">
+        <div class="origin-name">${o.name}</div>
+        <div class="origin-desc">${o.desc}</div>
+        <div class="origin-bonuses">${o.bonuses}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectOrigin(id) {
+  char.origin = id;
+  renderOrigins();
+  document.getElementById('sheet-origin').textContent = ORIGINS.find(o=>o.id===id)?.name || '— SELECT AN ORIGIN —';
+  // Re-render SPECIAL to show attr bonuses, and skills to show skill bonuses
+  if (document.getElementById('special-grid').children.length) renderSPECIAL();
+  computeSkillPoints();
+  if (document.getElementById('skills-list').children.length) renderSkills();
+  updateLivePanel();
+}
+
+// ═══════════════════════════════════════
+// STEP 3: SPECIAL
+// ═══════════════════════════════════════
+
+function renderSPECIAL() {
+  const grid = document.getElementById('special-grid');
+  const ea = getEffectiveAttrs();
+  grid.innerHTML = SPECIAL_ATTRS.map(a => {
+    const base = char.attrs[a.key];
+    const effective = ea[a.key];
+    const bonus = effective - base;
+    const bubbles = Array.from({length:12}, (_,i) => {
+      let cls = '';
+      if (i < base) cls = 'filled';
+      else if (i < effective) cls = 'filled bonus-pip';
+      return `<div class="bubble ${cls}"></div>`;
+    }).join('');
+    const bonusTag = bonus !== 0
+      ? `<span class="attr-bonus-tag" style="color:${bonus>0?'var(--green)':'var(--red)'};font-size:0.6rem;margin-left:2px;">${bonus>0?'+':''}${bonus}</span>`
+      : '';
+    return `
+      <div class="attr-card ${bonus !== 0 ? (bonus > 0 ? 'attr-buffed' : 'attr-nerfed') : ''}">
+        <div class="attr-letter">${a.key}</div>
+        <div class="attr-name">${a.name}</div>
+        <div class="attr-controls">
+          <button class="attr-btn" onclick="changeAttr('${a.key}',-1)" ${base<=4?'disabled':''}>−</button>
+          <div class="attr-val">${effective}${bonusTag}</div>
+          <button class="attr-btn" onclick="changeAttr('${a.key}',+1)" ${base>=12||char.attrPointsLeft<=0?'disabled':''}>+</button>
+        </div>
+        <div class="attr-bubbles">${bubbles}</div>
+      </div>
+    `;
+  }).join('');
+
+  document.getElementById('attr-pts-display').textContent = char.attrPointsLeft;
+  renderDerivedStats();
+  updateLivePanel();
+}
+
+function changeAttr(key, delta) {
+  const newVal = char.attrs[key] + delta;
+  if (newVal < 4 || newVal > 12) return;
+  if (delta > 0 && char.attrPointsLeft <= 0) return;
+  char.attrs[key] = newVal;
+  char.attrPointsLeft -= delta;
+  renderSPECIAL();
+  // Recompute skill points if on skills step
+  computeSkillPoints();
+}
+
+function renderDerivedStats() {
+  const d = getDerived();
+  const ea = getEffectiveAttrs();
+  document.getElementById('derived-table').innerHTML = `
+    <table style="width:100%;font-size:0.78rem;border-collapse:collapse;">
+      <tr><th style="text-align:left;color:var(--amber);font-family:Oswald;letter-spacing:2px;padding:0.4rem;border:1px solid var(--border);background:rgba(245,166,35,0.07);font-size:0.72rem;">Statistic</th><th style="text-align:left;color:var(--amber);font-family:Oswald;letter-spacing:2px;padding:0.4rem;border:1px solid var(--border);background:rgba(245,166,35,0.07);font-size:0.72rem;">Value</th><th style="text-align:left;color:var(--amber);font-family:Oswald;letter-spacing:2px;padding:0.4rem;border:1px solid var(--border);background:rgba(245,166,35,0.07);font-size:0.72rem;">Formula</th></tr>
+      <tr><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--text-dim);">Hit Points</td><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--amber);font-family:Oswald;">${d.hp}</td><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--text-dim);font-size:0.72rem;">Endurance (${ea.E}) × 2</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--text-dim);">Initiative</td><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--amber);font-family:Oswald;">${d.init}</td><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--text-dim);font-size:0.72rem;">Agility (${ea.A}) + Perception (${ea.P})</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--text-dim);">Melee Bonus</td><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--amber);font-family:Oswald;">+${d.meleeBonus} CD</td><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--text-dim);font-size:0.72rem;">Strength (${ea.S}) ÷ 2 (round down)</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--text-dim);">Carry Weight</td><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--amber);font-family:Oswald;">${d.carry} lbs</td><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--text-dim);font-size:0.72rem;">Strength (${ea.S}) × 10</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--text-dim);">Luck Points</td><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--amber);font-family:Oswald;">${d.luck}</td><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--text-dim);font-size:0.72rem;">= Luck attribute (${ea.L})</td></tr>
+      <tr><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--text-dim);">Skill Points</td><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--amber);font-family:Oswald;">${d.skillPts}</td><td style="padding:0.35rem 0.5rem;border:1px solid rgba(245,166,35,0.1);color:var(--text-dim);font-size:0.72rem;">Intelligence (${ea.I}) × 2${getTraitSPPenalty()>0?' − '+getTraitSPPenalty()+' (Gifted)':''}</td></tr>
+    </table>
+  `;
+}
+
+function getDerived() {
+  const ea = getEffectiveAttrs();
+  return {
+    hp: ea.E * 2,
+    init: ea.A + ea.P,
+    meleeBonus: Math.floor(ea.S / 2),
+    carry: ea.S * 10,
+    luck: ea.L,
+    skillPts: Math.max(0, ea.I * 2 - getTraitSPPenalty()),
+  };
+}
+
+// Returns the final attribute values after all origin + trait bonuses
+function getEffectiveAttrs() {
+  const result = { ...char.attrs };
+  // Origin attr bonuses
+  const origin = ORIGINS.find(o => o.id === char.origin);
+  if (origin) {
+    for (const [k, v] of Object.entries(origin.attrBonuses || {})) {
+      result[k] = Math.min(12, (result[k] || 0) + v);
+    }
+  }
+  // Trait attr bonuses
+  for (const tid of char.traits) {
+    const trait = TRAITS_DATA.find(t => t.id === tid);
+    if (!trait) continue;
+    for (const [k, v] of Object.entries(trait.attrBonuses || {})) {
+      result[k] = Math.max(1, Math.min(14, (result[k] || 0) + v));
+    }
+  }
+  return result;
+}
+
+// Returns total bonus to a given skill id from origin + traits
+function getEffectiveSkillBonus(skillId) {
+  let bonus = 0;
+  const origin = ORIGINS.find(o => o.id === char.origin);
+  if (origin && origin.skillBonuses && origin.skillBonuses[skillId]) {
+    bonus += origin.skillBonuses[skillId];
+  }
+  for (const tid of char.traits) {
+    const trait = TRAITS_DATA.find(t => t.id === tid);
+    if (!trait) continue;
+    if (trait.skillBonuses && trait.skillBonuses[skillId]) bonus += trait.skillBonuses[skillId];
+    if (trait.skillPenalties && trait.skillPenalties[skillId]) bonus += trait.skillPenalties[skillId];
+  }
+  return bonus;
+}
+
+// Returns SP reduction from Gifted trait
+function getTraitSPPenalty() {
+  let pen = 0;
+  for (const tid of char.traits) {
+    const trait = TRAITS_DATA.find(t => t.id === tid);
+    if (trait && trait.spPenalty) pen += trait.spPenalty;
+  }
+  return pen;
+}
+
+// ═══════════════════════════════════════
+// STEP 4: SKILLS
+// ═══════════════════════════════════════
+
+function computeSkillPoints() {
+  const ea = getEffectiveAttrs();
+  const total = Math.max(0, ea.I * 2 - getTraitSPPenalty());
+  char.skillPointsTotal = total;
+  const spent = Object.values(char.skills).reduce((a,b) => a+b, 0);
+  char.skillPointsLeft = total - spent;
+  if (document.getElementById('sp-total-display'))
+    document.getElementById('sp-total-display').textContent = total;
+}
+
+function renderSkills() {
+  computeSkillPoints();
+  const list = document.getElementById('skills-list');
+  list.innerHTML = SKILLS_DATA.map(s => {
+    const rank = char.skills[s.id] || 0;
+    const isTagged = char.tagged.includes(s.id);
+    const bonus = getEffectiveSkillBonus(s.id);
+    const tagBonus = isTagged ? 2 : 0;
+    const displayRank = Math.max(0, rank + tagBonus + bonus);
+    const hasBonus = bonus > 0;
+    const hasPenalty = bonus < 0;
+
+    // Build pip display: spent (amber), tag bonus (green), origin/trait bonus (blue/red)
+    const pips = Array.from({length:6}, (_,i) => {
+      let cls = '';
+      if (i < rank) cls = 'filled';
+      else if (i < rank + tagBonus) cls = 'filled tag-bonus-pip';
+      else if (bonus > 0 && i < rank + tagBonus + bonus) cls = 'filled origin-bonus-pip';
+      return `<div class="rank-pip ${cls}"></div>`;
+    }).join('');
+
+    const bonusTag = bonus !== 0
+      ? `<span style="font-size:0.62rem;color:${bonus>0?'var(--green)':'var(--red)'};margin-left:4px;">${bonus>0?'+':''}${bonus}</span>`
+      : '';
+
+    return `
+      <div class="skill-row ${isTagged?'tagged':''} ${hasBonus?'skill-buffed':''} ${hasPenalty?'skill-nerfed':''}" id="skill-row-${s.id}">
+        <button class="skill-tag-btn ${isTagged?'tagged':''}" onclick="toggleTag('${s.id}')" title="Tag skill (+2 ranks free)">T</button>
+        <div class="skill-name-col">${s.name}${isTagged?'<span class="tag-badge">TAGGED</span>':''}${bonus!==0?`<span class="tag-badge" style="${bonus>0?'color:var(--green);border-color:var(--green-dim);background:var(--green-pale)':'color:var(--red);border-color:rgba(230,50,50,0.4);background:rgba(230,50,50,0.05)'}">${bonus>0?'+':''}${bonus} BONUS</span>`:''}</div>
+        <div class="skill-attr-col">${s.attr}</div>
+        <div class="skill-rank-controls">
+          <button class="rank-btn" onclick="changeSkill('${s.id}',-1)" ${rank<=0?'disabled':''}>−</button>
+          <div class="rank-display">${pips}</div>
+          <div class="rank-val">${displayRank}</div>
+          <button class="rank-btn" onclick="changeSkill('${s.id}',+1)" ${rank>=2||char.skillPointsLeft<=0?'disabled':''}>+</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+  updateSkillPointsBar();
+  updateLivePanel();
+}
+
+function changeSkill(id, delta) {
+  const cur = char.skills[id] || 0;
+  const newR = cur + delta;
+  if (newR < 0 || newR > 2) return;
+  if (delta > 0 && char.skillPointsLeft <= 0) return;
+  char.skills[id] = newR;
+  char.skillPointsLeft -= delta;
+  renderSkills();
+}
+
+function toggleTag(id) {
+  if (char.tagged.includes(id)) {
+    char.tagged = char.tagged.filter(t => t !== id);
+  } else {
+    if (char.tagged.length >= 3) return;
+    char.tagged.push(id);
+  }
+  renderSkills();
+}
+
+function updateSkillPointsBar() {
+  const left = char.skillPointsLeft;
+  const total = char.skillPointsTotal;
+  document.getElementById('sp-remaining').textContent = left;
+  document.getElementById('tagged-count').textContent = char.tagged.length + '/3';
+  const pct = total > 0 ? (left / total) * 100 : 0;
+  document.getElementById('sp-fill').style.width = pct + '%';
+}
+
+// ═══════════════════════════════════════
+// STEP 5: TRAITS
+// ═══════════════════════════════════════
+
+function renderTraits() {
+  const grid = document.getElementById('traits-grid');
+  grid.innerHTML = TRAITS_DATA.map(t => `
+    <div class="selectable-card ${char.traits.includes(t.id)?'selected':''}" onclick="toggleTrait('${t.id}')">
+      <div class="card-check">✓</div>
+      <div class="card-title">${t.name}</div>
+      <div class="card-body">
+        <strong>✚ ${t.benefit}</strong><br>
+        <em>✖ ${t.drawback}</em>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('trait-count').textContent = char.traits.length;
+}
+
+function toggleTrait(id) {
+  if (char.traits.includes(id)) {
+    char.traits = char.traits.filter(t => t !== id);
+  } else {
+    if (char.traits.length >= 2) return;
+    char.traits.push(id);
+  }
+  renderTraits();
+  // Re-render downstream panels to reflect attr/skill changes
+  if (document.getElementById('special-grid').children.length) renderSPECIAL();
+  computeSkillPoints();
+  if (document.getElementById('skills-list').children.length) renderSkills();
+  updateLivePanel();
+}
+
+// ═══════════════════════════════════════
+// STEP 6: PERKS
+// ═══════════════════════════════════════
+
+function renderPerks() {
+  const grid = document.getElementById('perks-grid');
+  grid.innerHTML = PERKS_DATA.map(p => `
+    <div class="selectable-card ${char.perk===p.id?'selected':''}" onclick="selectPerk('${p.id}')">
+      <div class="card-check">✓</div>
+      <div class="card-title">${p.name}</div>
+      <div class="card-body">${p.desc}</div>
+    </div>
+  `).join('');
+  document.getElementById('perk-count').textContent = char.perk ? 1 : 0;
+}
+
+function selectPerk(id) {
+  char.perk = (char.perk === id) ? null : id;
+  renderPerks();
+  updateLivePanel();
+}
+
+// ═══════════════════════════════════════
+// STEP 7: EQUIPMENT
+// ═══════════════════════════════════════
+
+function renderGear() {
+  renderGearGrid('weapon-grid', WEAPONS_DATA, 'weapon');
+  renderGearGrid('armor-grid', ARMOR_DATA, 'armor');
+  renderGearGrid('pack-grid', PACKS_DATA, 'pack');
+}
+
+function renderGearGrid(elId, data, type) {
+  const el = document.getElementById(elId);
+  el.innerHTML = data.map(g => `
+    <div class="gear-card ${char[type]===g.id?'selected':''}" onclick="selectGear('${type}','${g.id}')">
+      <div class="gear-check">✓</div>
+      <div class="gear-name">${g.name}</div>
+      <div class="gear-stats">${g.stats.replace(/(\w+:)/g, m => `<span>${m}</span>`)}</div>
+    </div>
+  `).join('');
+}
+
+function selectGear(type, id) {
+  char[type] = (char[type] === id) ? null : id;
+  renderGearGrid(type+'-grid', type==='weapon'?WEAPONS_DATA:type==='armor'?ARMOR_DATA:PACKS_DATA, type);
+  updateLivePanel();
+}
+
+// ═══════════════════════════════════════
+// LIVE PANEL UPDATE
+// ═══════════════════════════════════════
+
+function updateLivePanel() {
+  // Name & origin
+  document.getElementById('sheet-name').textContent = char.name || 'UNKNOWN SURVIVOR';
+  const origin = ORIGINS.find(o => o.id === char.origin);
+  document.getElementById('sheet-origin').textContent = origin ? origin.name.toUpperCase() : '— SELECT AN ORIGIN —';
+
+  // Mini SPECIAL — show effective values
+  const ea = getEffectiveAttrs();
+  const ms = document.getElementById('mini-special');
+  ms.innerHTML = SPECIAL_ATTRS.map(a => {
+    const bonus = ea[a.key] - char.attrs[a.key];
+    return `
+    <div class="mini-attr" style="${bonus > 0 ? 'border-color:rgba(57,255,20,0.3)' : bonus < 0 ? 'border-color:rgba(230,50,50,0.3)' : ''}">
+      <div class="mini-attr-letter">${a.key}</div>
+      <div class="mini-attr-val" style="color:${bonus>0?'var(--green)':bonus<0?'var(--red)':'var(--text)'}">${ea[a.key]}</div>
+    </div>`;
+  }).join('');
+
+  // Derived (uses effective attrs via getDerived())
+  const d = getDerived();
+  document.getElementById('derived-stats').innerHTML = `
+    <div class="derived-row"><span class="derived-label">HP</span><span class="derived-val">${d.hp}</span></div>
+    <div class="derived-row"><span class="derived-label">Initiative</span><span class="derived-val">${d.init}</span></div>
+    <div class="derived-row"><span class="derived-label">Carry</span><span class="derived-val">${d.carry} lbs</span></div>
+    <div class="derived-row"><span class="derived-label">Luck Pts</span><span class="derived-val">${d.luck}</span></div>
+    <div class="derived-row"><span class="derived-label">Melee Bonus</span><span class="derived-val">+${d.meleeBonus} CD</span></div>
+  `;
+
+  // Mini skills (non-zero only, using effective totals)
+  const sl = document.getElementById('mini-skills-list');
+  const skillRows = SKILLS_DATA.filter(s => {
+    const r = char.skills[s.id] || 0;
+    const tagged = char.tagged.includes(s.id);
+    const bonus = getEffectiveSkillBonus(s.id);
+    return r > 0 || tagged || bonus > 0;
+  });
+  sl.innerHTML = skillRows.length ? skillRows.map(s => {
+    const r = char.skills[s.id] || 0;
+    const tagged = char.tagged.includes(s.id);
+    const bonus = getEffectiveSkillBonus(s.id);
+    const display = Math.max(0, r + (tagged?2:0) + bonus);
+    const isBuffed = bonus > 0;
+    const isNerfed = bonus < 0;
+    return `<div class="mini-skill-row">
+      <span class="mini-skill-name ${tagged?'mini-skill-tagged':''}">${s.name}</span>
+      <span class="mini-skill-val" style="color:${isNerfed?'var(--red)':tagged?'var(--green)':'var(--amber)'}">${display}${isBuffed?' ✚':tagged?' ★':''}</span>
+    </div>`;
+  }).join('') : '<div style="color:var(--text-dim);font-size:0.68rem;padding:0.2rem 0;">None allocated</div>';
+
+  // Traits
+  const mt = document.getElementById('mini-traits');
+  mt.innerHTML = char.traits.length ? char.traits.map(id => {
+    const t = TRAITS_DATA.find(x => x.id === id);
+    return `<div class="sheet-trait">${t?.name || id}</div>`;
+  }).join('') : '<div style="color:var(--text-dim);font-size:0.68rem;">None selected</div>';
+
+  // Perk
+  const mp = document.getElementById('mini-perk');
+  const perk = PERKS_DATA.find(p => p.id === char.perk);
+  mp.innerHTML = perk ? `<div style="color:var(--amber);font-size:0.7rem;font-family:Oswald;letter-spacing:1px;">${perk.name}</div><div style="color:var(--text-dim);font-size:0.65rem;margin-top:0.2rem;">${perk.desc}</div>` : '<div style="color:var(--text-dim);font-size:0.68rem;">None selected</div>';
+}
+
+// ═══════════════════════════════════════
+// SUMMARY
+// ═══════════════════════════════════════
+
+function buildSummary() {
+  const d = getDerived();
+  const ea = getEffectiveAttrs();
+  const origin = ORIGINS.find(o => o.id === char.origin);
+  const perk = PERKS_DATA.find(p => p.id === char.perk);
+  const weapon = WEAPONS_DATA.find(w => w.id === char.weapon);
+  const armor = ARMOR_DATA.find(a => a.id === char.armor);
+  const pack = PACKS_DATA.find(p => p.id === char.pack);
+
+  const nonZeroSkills = SKILLS_DATA.filter(s => {
+    const r = char.skills[s.id] || 0;
+    const tagged = char.tagged.includes(s.id);
+    const bonus = getEffectiveSkillBonus(s.id);
+    return r > 0 || tagged || bonus > 0;
+  });
+
+  document.getElementById('summary-sheet').innerHTML = `
+    <div class="sum-header">
+      <div class="sum-name">${char.name || 'UNKNOWN SURVIVOR'}</div>
+      <div class="sum-subtitle">${origin ? origin.name.toUpperCase() : 'WASTELANDER'} // ${char.era || 'UNKNOWN ERA'} // ${char.gender || ''}</div>
+    </div>
+
+    <div class="sum-grid">
+      <div>
+        <div class="sum-block-title">S.P.E.C.I.A.L. (effective)</div>
+        ${SPECIAL_ATTRS.map(a => {
+          const base = char.attrs[a.key];
+          const eff = ea[a.key];
+          const bonus = eff - base;
+          return `<div class="sum-row">
+            <span class="sum-key">${a.name}</span>
+            <span class="sum-value amber">${eff}${bonus !== 0 ? `<span style="font-size:0.65rem;color:${bonus>0?'var(--green)':'var(--red)'};margin-left:4px;">(${base}${bonus>0?'+':''}${bonus})</span>` : ''}</span>
+          </div>`;
+        }).join('')}
+
+        <div class="sum-block-title" style="margin-top:1rem;">Derived Statistics</div>
+        <div class="sum-row"><span class="sum-key">Hit Points</span><span class="sum-value amber">${d.hp}</span></div>
+        <div class="sum-row"><span class="sum-key">Initiative</span><span class="sum-value amber">${d.init}</span></div>
+        <div class="sum-row"><span class="sum-key">Luck Points</span><span class="sum-value amber">${d.luck}</span></div>
+        <div class="sum-row"><span class="sum-key">Carry Weight</span><span class="sum-value amber">${d.carry} lbs</span></div>
+        <div class="sum-row"><span class="sum-key">Melee Bonus</span><span class="sum-value amber">+${d.meleeBonus} CD</span></div>
+        <div class="sum-row"><span class="sum-key">Defense</span><span class="sum-value amber">1</span></div>
+
+        <div class="sum-block-title" style="margin-top:1rem;">Traits</div>
+        ${char.traits.length ? char.traits.map(id => {
+          const t = TRAITS_DATA.find(x => x.id === id);
+          return `<div class="sum-row"><span class="sum-key">${t.name}</span></div>`;
+        }).join('') : '<div class="sum-row"><span class="sum-key" style="font-style:italic;">None</span></div>'}
+
+        <div class="sum-block-title" style="margin-top:1rem;">Starting Perk</div>
+        <div class="sum-row"><span class="sum-key">${perk ? perk.name : 'None'}</span></div>
+        ${perk ? `<div style="font-size:0.67rem;color:var(--text-dim);margin-top:0.2rem;">${perk.desc}</div>` : ''}
+      </div>
+
+      <div>
+        <div class="sum-block-title">Skills (effective)</div>
+        ${nonZeroSkills.length ? nonZeroSkills.map(s => {
+          const r = char.skills[s.id] || 0;
+          const tagged = char.tagged.includes(s.id);
+          const bonus = getEffectiveSkillBonus(s.id);
+          const display = Math.max(0, r + (tagged?2:0) + bonus);
+          const isNerfed = bonus < 0;
+          const isBuffed = bonus > 0;
+          let bonusTip = '';
+          if (tagged && bonus > 0) bonusTip = ` (${r} spent +2 tagged +${bonus} bonus)`;
+          else if (tagged) bonusTip = ` (${r} spent +2 tagged)`;
+          else if (bonus !== 0) bonusTip = ` (${r} spent ${bonus>0?'+':''}${bonus} bonus)`;
+          return `<div class="sum-row">
+            <span class="sum-key">${s.name}${tagged?' ★':''}</span>
+            <span class="sum-value" style="color:${isNerfed?'var(--red)':isBuffed||tagged?'var(--green)':'var(--amber)'}">${display}<span style="font-size:0.62rem;color:var(--text-dim);">${bonusTip}</span></span>
+          </div>`;
+        }).join('') : '<div class="sum-row"><span class="sum-key" style="font-style:italic;">None trained</span></div>'}
+
+        <div class="sum-block-title" style="margin-top:1rem;">Origin</div>
+        <div class="sum-row"><span class="sum-key">${origin ? origin.name : 'None selected'}</span></div>
+        ${origin ? `<div style="font-size:0.67rem;color:var(--text-dim);margin-top:0.2rem;">${origin.bonuses}</div>` : ''}
+
+        <div class="sum-block-title" style="margin-top:1rem;">Equipment</div>
+        <div class="sum-row"><span class="sum-key">Weapon</span><span class="sum-value">${weapon ? weapon.name : '—'}</span></div>
+        ${weapon ? `<div style="font-size:0.67rem;color:var(--text-dim);margin-bottom:0.3rem;">${weapon.stats}</div>` : ''}
+        <div class="sum-row"><span class="sum-key">Armor</span><span class="sum-value">${armor ? armor.name : '—'}</span></div>
+        ${armor ? `<div style="font-size:0.67rem;color:var(--text-dim);margin-bottom:0.3rem;">${armor.stats}</div>` : ''}
+        <div class="sum-row"><span class="sum-key">Pack</span><span class="sum-value">${pack ? pack.name : '—'}</span></div>
+        ${pack ? `<div style="font-size:0.67rem;color:var(--text-dim);">${pack.stats}</div>` : ''}
+
+        ${char.appearance ? `
+          <div class="sum-block-title" style="margin-top:1rem;">Appearance</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);line-height:1.5;">${char.appearance}</div>
+        ` : ''}
+        ${char.backstory ? `
+          <div class="sum-block-title" style="margin-top:1rem;">Backstory</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);line-height:1.5;">${char.backstory}</div>
+        ` : ''}
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);font-size:0.65rem;color:var(--text-dim);letter-spacing:3px;">
+      VAULT-TEC CERTIFIED SURVIVOR // CHARACTER CREATION COMPLETE // WAR NEVER CHANGES
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════
+// EXPORT & PRINT
+// ═══════════════════════════════════════
+
+function exportCharacter() {
+  const data = JSON.stringify(char, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (char.name || 'character').replace(/\s+/g,'_') + '_fallout2d20.json';
+  a.click();
+}
+
+function printCharacter() {
+  buildSummary();
+  window.print();
+}
+
+function resetCharacter() {
+  if (!confirm('Reset all character data? This cannot be undone.')) return;
+  char = {
+    name:'',player:'',gender:'',age:'',era:'',appearance:'',backstory:'',
+    origin:null,
+    attrs:{S:5,P:5,E:5,C:5,I:5,A:5,L:5},
+    attrPointsLeft:5,
+    skills:{},
+    tagged:[],
+    skillPointsLeft:0,
+    skillPointsTotal:0,
+    traits:[],
+    perk:null,
+    weapon:null,armor:null,pack:null,
+  };
+  SKILLS_DATA.forEach(s => { char.skills[s.id] = 0; });
+  document.getElementById('char-name').value = '';
+  document.getElementById('player-name').value = '';
+  document.getElementById('char-gender').value = '';
+  document.getElementById('char-age').value = '';
+  document.getElementById('char-era').value = '';
+  document.getElementById('char-appearance').value = '';
+  document.getElementById('char-backstory').value = '';
+  goStep(0);
+  renderOrigins();
+  renderSPECIAL();
+  renderTraits();
+  renderPerks();
+  renderGear();
+  updateLivePanel();
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+
+function init() {
+  renderOrigins();
+  renderSPECIAL();
+  renderSkills();
+  renderTraits();
+  renderPerks();
+  renderGear();
+  updateLivePanel();
+
+  // CRT boot flicker
+  document.body.style.opacity = 0;
+  setTimeout(() => {
+    document.body.style.transition = 'opacity 0.2s';
+    document.body.style.opacity = 0.3;
+    setTimeout(() => {
+      document.body.style.opacity = 1;
+      setTimeout(() => {
+        document.body.style.opacity = 0.7;
+        setTimeout(() => { document.body.style.opacity = 1; }, 60);
+      }, 80);
+    }, 120);
+  }, 30);
+}
+
+init();
+</script>
+</body>
+</html>

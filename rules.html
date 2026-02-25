@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fallout 2D20 — Field Manual</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@400;600;700&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --amber: #f5a623;
+    --amber-dim: #c47d0e;
+    --amber-glow: rgba(245,166,35,0.15);
+    --green: #39ff14;
+    --green-dim: #1a7a00;
+    --dark: #0a0a08;
+    --darker: #050503;
+    --panel: #111109;
+    --panel2: #161610;
+    --border: rgba(245,166,35,0.3);
+    --text: #d4c4a0;
+    --text-dim: #8a7a5a;
+    --red: #e63232;
+    --pip: #39ff14;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--darker);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* CRT vignette */
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  /* ─── HEADER ─── */
+  #header {
+    background: var(--panel);
+    border-bottom: 2px solid var(--amber);
+    padding: 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 0 30px rgba(245,166,35,0.2);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.6rem 1.5rem;
+  }
+
+  .pip-icon {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+  }
+
+  .site-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--amber);
+    letter-spacing: 3px;
+    text-shadow: 0 0 15px rgba(245,166,35,0.5);
+    line-height: 1;
+  }
+
+  .site-subtitle {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    letter-spacing: 4px;
+    margin-top: 3px;
+  }
+
+  .header-nav {
+    margin-left: auto;
+    display: flex;
+    gap: 0.3rem;
+    flex-wrap: wrap;
+  }
+
+  .nav-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    padding: 0.3rem 0.7rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .nav-btn:hover, .nav-btn.active {
+    background: var(--amber-glow);
+    border-color: var(--amber);
+    color: var(--amber);
+    box-shadow: 0 0 10px rgba(245,166,35,0.2);
+  }
+
+  /* ─── LAYOUT ─── */
+  #app {
+    display: flex;
+    min-height: calc(100vh - 66px);
+  }
+
+  /* ─── SIDEBAR ─── */
+  #sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    height: calc(100vh - 66px);
+    position: sticky;
+    top: 66px;
+  }
+
+  .sidebar-section {
+    border-bottom: 1px solid rgba(245,166,35,0.1);
+  }
+
+  .sidebar-heading {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 4px;
+    color: var(--amber);
+    padding: 0.8rem 1rem 0.4rem;
+    text-transform: uppercase;
+    opacity: 0.7;
+  }
+
+  .sidebar-link {
+    display: block;
+    padding: 0.45rem 1rem 0.45rem 1.5rem;
+    color: var(--text-dim);
+    font-size: 0.78rem;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+
+  .sidebar-link:hover {
+    color: var(--amber);
+    border-left-color: var(--amber);
+    background: var(--amber-glow);
+    padding-left: 1.8rem;
+  }
+
+  .sidebar-link.active {
+    color: var(--amber);
+    border-left-color: var(--amber);
+    background: var(--amber-glow);
+  }
+
+  /* ─── CONTENT ─── */
+  #content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 2rem 2.5rem;
+    max-width: 960px;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── TYPOGRAPHY ─── */
+  .page-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--amber);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-shadow: 0 0 20px rgba(245,166,35,0.3);
+    margin-bottom: 0.3rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.8rem;
+  }
+
+  .page-intro {
+    color: var(--text-dim);
+    font-size: 0.82rem;
+    margin-bottom: 2rem;
+    letter-spacing: 1px;
+    font-style: italic;
+  }
+
+  h2 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.3rem;
+    color: var(--amber);
+    letter-spacing: 3px;
+    margin: 2rem 0 0.8rem;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  h2::before {
+    content: '//';
+    color: var(--amber-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9rem;
+  }
+
+  h3 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1rem;
+    color: var(--text);
+    letter-spacing: 2px;
+    margin: 1.2rem 0 0.5rem;
+    text-transform: uppercase;
+  }
+
+  p {
+    line-height: 1.75;
+    font-size: 0.85rem;
+    margin-bottom: 0.8rem;
+    color: var(--text);
+  }
+
+  strong { color: var(--amber); }
+  em { color: var(--green); font-style: normal; }
+
+  /* ─── CARDS ─── */
+  .card {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    padding: 1.2rem 1.4rem;
+    margin: 1rem 0;
+    position: relative;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--amber);
+  }
+
+  .card-title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.9rem;
+    color: var(--amber);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 0.6rem;
+  }
+
+  /* ─── GRID ─── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1rem 0; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.8rem; margin: 1rem 0; }
+
+  @media (max-width: 700px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    #sidebar { display: none; }
+  }
+
+  /* ─── STAT BLOCK ─── */
+  .stat-block {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .stat-name {
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--amber);
+    letter-spacing: 3px;
+  }
+
+  .stat-abbr {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin: 0.1rem 0;
+  }
+
+  .stat-desc {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 0.4rem;
+    line-height: 1.5;
+  }
+
+  /* ─── TABLE ─── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.8rem;
+  }
+
+  th {
+    background: rgba(245,166,35,0.15);
+    color: var(--amber);
+    font-family: 'Oswald', sans-serif;
+    letter-spacing: 2px;
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    border: 1px solid var(--border);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+  }
+
+  td {
+    padding: 0.5rem 0.8rem;
+    border: 1px solid rgba(245,166,35,0.1);
+    vertical-align: top;
+    line-height: 1.5;
+  }
+
+  tr:nth-child(even) td { background: rgba(245,166,35,0.03); }
+  tr:hover td { background: rgba(245,166,35,0.06); }
+
+  /* ─── CALLOUT BOXES ─── */
+  .callout {
+    border: 1px solid;
+    padding: 0.8rem 1.2rem;
+    margin: 1rem 0;
+    font-size: 0.82rem;
+    position: relative;
+  }
+
+  .callout-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 0.4rem;
+  }
+
+  .callout.tip { border-color: var(--green-dim); background: rgba(57,255,20,0.04); }
+  .callout.tip .callout-label { color: var(--green); }
+  .callout.warning { border-color: rgba(230,50,50,0.4); background: rgba(230,50,50,0.04); }
+  .callout.warning .callout-label { color: var(--red); }
+  .callout.rule { border-color: var(--border); background: rgba(245,166,35,0.05); }
+  .callout.rule .callout-label { color: var(--amber); }
+
+  /* ─── DICE DISPLAY ─── */
+  .dice-row { display: flex; gap: 1rem; flex-wrap: wrap; margin: 0.8rem 0; }
+
+  .die {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 70px; height: 70px;
+    border: 2px solid var(--amber);
+    background: var(--panel2);
+    font-family: 'Oswald', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--amber);
+    text-shadow: 0 0 10px rgba(245,166,35,0.5);
+    box-shadow: 0 0 15px rgba(245,166,35,0.1);
+    position: relative;
+    clip-path: polygon(10% 0%, 90% 0%, 100% 10%, 100% 90%, 90% 100%, 10% 100%, 0% 90%, 0% 10%);
+  }
+
+  .die-label { font-size: 0.55rem; letter-spacing: 1px; color: var(--text-dim); margin-top: 2px; }
+
+  /* ─── SKILL LIST ─── */
+  .skill-item {
+    display: flex;
+    gap: 0.8rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(245,166,35,0.08);
+    font-size: 0.82rem;
+  }
+
+  .skill-name {
+    color: var(--amber);
+    font-family: 'Oswald', sans-serif;
+    letter-spacing: 1px;
+    min-width: 140px;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+  }
+
+  .skill-attr { color: var(--green); font-size: 0.72rem; min-width: 100px; }
+
+  /* ─── PROGRESS BAR ─── */
+  .progress-bar {
+    height: 6px;
+    background: rgba(245,166,35,0.15);
+    margin: 0.3rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--amber);
+    box-shadow: 0 0 8px rgba(245,166,35,0.5);
+  }
+
+  /* ─── TERMINAL EFFECT ─── */
+  .terminal-box {
+    background: #050503;
+    border: 1px solid var(--green-dim);
+    padding: 1rem 1.2rem;
+    font-size: 0.78rem;
+    color: var(--green);
+    margin: 1rem 0;
+    box-shadow: 0 0 20px rgba(57,255,20,0.05) inset;
+  }
+
+  .terminal-box .prompt::before {
+    content: '> ';
+    color: var(--green);
+    opacity: 0.5;
+  }
+
+  /* ─── SEARCH ─── */
+  #search-bar {
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.8rem;
+    padding: 0.5rem 1rem;
+    width: 200px;
+    outline: none;
+    margin-left: auto;
+  }
+
+  #search-bar:focus { border-color: var(--amber); box-shadow: 0 0 10px rgba(245,166,35,0.1); }
+  #search-bar::placeholder { color: var(--text-dim); }
+
+  /* ─── BADGE ─── */
+  .badge {
+    display: inline-block;
+    background: rgba(245,166,35,0.15);
+    border: 1px solid var(--amber-dim);
+    color: var(--amber);
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    padding: 0.15rem 0.5rem;
+    text-transform: uppercase;
+    margin: 0.1rem;
+  }
+
+  .badge.green { background: rgba(57,255,20,0.1); border-color: var(--green-dim); color: var(--green); }
+  .badge.red { background: rgba(230,50,50,0.1); border-color: rgba(230,50,50,0.5); color: var(--red); }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+  /* ─── ACCORDION ─── */
+  .accordion-item { border: 1px solid var(--border); margin: 0.5rem 0; }
+  .accordion-header {
+    background: var(--panel2);
+    padding: 0.8rem 1rem;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Oswald', sans-serif;
+    letter-spacing: 2px;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    transition: background 0.15s;
+  }
+  .accordion-header:hover { background: var(--amber-glow); }
+  .accordion-header.open { color: var(--amber); }
+  .accordion-arrow { transition: transform 0.2s; }
+  .accordion-header.open .accordion-arrow { transform: rotate(90deg); }
+  .accordion-body { display: none; padding: 0.8rem 1.2rem; font-size: 0.82rem; border-top: 1px solid rgba(245,166,35,0.1); }
+  .accordion-body.open { display: block; }
+
+  /* scroll */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--darker); }
+  ::-webkit-scrollbar-thumb { background: var(--amber-dim); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="header-inner">
+    <!-- Pip-Boy SVG Icon -->
+    <svg class="pip-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="4" y="8" width="40" height="32" rx="4" stroke="#f5a623" stroke-width="2" fill="none"/>
+      <rect x="8" y="12" width="20" height="16" rx="1" fill="#0a0a08" stroke="#39ff14" stroke-width="1.5"/>
+      <circle cx="18" cy="20" r="4" stroke="#39ff14" stroke-width="1.5" fill="none"/>
+      <circle cx="18" cy="20" r="1.5" fill="#39ff14"/>
+      <rect x="30" y="13" width="10" height="2" rx="1" fill="#f5a623"/>
+      <rect x="30" y="17" width="8" height="2" rx="1" fill="#f5a623" opacity="0.6"/>
+      <rect x="30" y="21" width="10" height="2" rx="1" fill="#f5a623"/>
+      <rect x="30" y="25" width="6" height="2" rx="1" fill="#f5a623" opacity="0.6"/>
+      <rect x="8" y="31" width="4" height="4" rx="2" fill="#39ff14"/>
+      <rect x="14" y="31" width="4" height="4" rx="2" fill="#39ff14" opacity="0.4"/>
+      <rect x="20" y="31" width="4" height="4" rx="2" fill="#39ff14" opacity="0.4"/>
+      <path d="M4 38 Q2 38 2 40 L2 42 Q2 44 4 44 L8 44 L8 38Z" fill="#f5a623" opacity="0.5"/>
+      <path d="M44 38 Q46 38 46 40 L46 42 Q46 44 44 44 L40 44 L40 38Z" fill="#f5a623" opacity="0.5"/>
+    </svg>
+
+    <div>
+      <div class="site-title">FALLOUT 2D20</div>
+      <div class="site-subtitle">FIELD MANUAL &amp; RULES REFERENCE // MODIPHIUS ENTERTAINMENT</div>
+    </div>
+
+    <div class="header-nav">
+      <button class="nav-btn active" onclick="showPage('overview')">OVERVIEW</button>
+      <button class="nav-btn" onclick="showPage('special')">S.P.E.C.I.A.L.</button>
+      <button class="nav-btn" onclick="showPage('skills')">SKILLS</button>
+      <button class="nav-btn" onclick="showPage('core')">CORE RULES</button>
+      <button class="nav-btn" onclick="showPage('combat')">COMBAT</button>
+      <button class="nav-btn" onclick="showPage('perks')">PERKS</button>
+      <button class="nav-btn" onclick="showPage('survival')">SURVIVAL</button>
+      <button class="nav-btn" onclick="showPage('gm')">GM SCREEN</button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Getting Started</div>
+      <div class="sidebar-link active" onclick="showPage('overview')">Introduction</div>
+      <div class="sidebar-link" onclick="showPage('special')">S.P.E.C.I.A.L. Attributes</div>
+      <div class="sidebar-link" onclick="showPage('skills')">Skills</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Core Mechanics</div>
+      <div class="sidebar-link" onclick="showPage('core')">Dice &amp; Tests</div>
+      <div class="sidebar-link" onclick="showPage('core')">Momentum</div>
+      <div class="sidebar-link" onclick="showPage('core')">Action Points</div>
+      <div class="sidebar-link" onclick="showPage('core')">Luck</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Combat</div>
+      <div class="sidebar-link" onclick="showPage('combat')">Combat Overview</div>
+      <div class="sidebar-link" onclick="showPage('combat')">Initiative</div>
+      <div class="sidebar-link" onclick="showPage('combat')">Actions</div>
+      <div class="sidebar-link" onclick="showPage('combat')">Damage &amp; Defense</div>
+      <div class="sidebar-link" onclick="showPage('combat')">Conditions</div>
+      <div class="sidebar-link" onclick="showPage('combat')">V.A.T.S.</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Characters</div>
+      <div class="sidebar-link" onclick="showPage('perks')">Perks &amp; Traits</div>
+      <div class="sidebar-link" onclick="showPage('survival')">Survival &amp; Rest</div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-heading">Game Master</div>
+      <div class="sidebar-link" onclick="showPage('gm')">GM Screen Reference</div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="content">
+
+    <!-- ══════════════════════════════════════════════════
+         PAGE: OVERVIEW
+    ══════════════════════════════════════════════════ -->
+    <div class="page active" id="page-overview">
+      <div class="page-title">INTRODUCTION</div>
+      <div class="page-intro">// WELCOME TO THE WASTELAND — RULES REFERENCE v1.0 //</div>
+
+      <div class="terminal-box">
+        <div class="prompt">FALLOUT 2D20 SYSTEM — MODIPHIUS ENTERTAINMENT</div>
+        <div class="prompt">INITIALIZING FIELD MANUAL...</div>
+        <div class="prompt">WAR. WAR NEVER CHANGES.</div>
+      </div>
+
+      <p>Fallout 2D20 is a tabletop roleplaying game set in the post-apocalyptic world of the Fallout franchise, published by <strong>Modiphius Entertainment</strong>. It uses the <strong>2D20 system</strong>, a dice pool mechanic where players roll handfuls of twenty-sided dice to determine outcomes, generating narrative-driving resources called <strong>Momentum</strong> and facing a countervailing threat from the <strong>Action Point pool</strong>.</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">What You'll Need</div>
+          <p>Each player needs <strong>2–3 twenty-sided dice (d20)</strong> and a supply of <strong>Combat Dice (d6)</strong>. The game master typically keeps extra sets. You'll also want tokens or beads to track Momentum and AP, and character sheets.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">The Core Fantasy</div>
+          <p>Players are survivors carving out existence in a devastated America circa <strong>2287</strong> (or another Fallout era). Sessions involve scavenging, faction politics, exploration, moral choices, and occasionally very violent confrontations.</p>
+        </div>
+      </div>
+
+      <h2>The 2D20 Loop</h2>
+      <p>Every significant action in Fallout 2D20 follows the same fundamental structure:</p>
+
+      <div class="callout rule">
+        <div class="callout-label">Core Loop</div>
+        <p>1. <strong>Declare action</strong> and select a Skill<br>
+        2. <strong>Set a Difficulty</strong> (0–5 Complications Tokens needed)<br>
+        3. <strong>Roll 2d20</strong> (buy up to 3 extra d20s with Momentum/Luck)<br>
+        4. <strong>Count successes</strong> — each die ≤ your Skill + Attribute target number<br>
+        5. <strong>Generate Momentum</strong> from excess successes or suffer Complications from 20s</p>
+      </div>
+
+      <h2>Key Resources</h2>
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">⚡ Momentum</div>
+          <p>A shared party pool of bonus successes. Spend to buy extra dice, increase damage, create advantages. Max <strong>6 Momentum</strong> at end of turn.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">☢ Action Points (AP)</div>
+          <p>The GM's counter-resource. Fuels enemy actions and complications. Players generate AP when failing or rolling complications. GM starts with <strong>1 AP per player</strong>.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">🍀 Luck</div>
+          <p>Personal points derived from your Luck attribute. Spend as Momentum (personal use only). Slow to recover — rest or use a Perk.</p>
+        </div>
+      </div>
+
+      <h2>Sessions of Play</h2>
+      <p>A typical Fallout 2D20 session sees players navigating <strong>Scenes</strong> — each scene representing a distinct location or encounter. The GM describes the environment, characters make choices and roll dice when uncertain outcomes matter. Between scenes, the party may rest, trade, or plan. The Wasteland is as much about roleplaying faction allegiances and moral ambiguity as it is about gunfights with Raiders.</p>
+
+      <div class="callout tip">
+        <div class="callout-label">New to 2D20?</div>
+        <p>Start with the <strong>Core Rules</strong> section to understand dice tests, then move to <strong>Combat</strong>. The S.P.E.C.I.A.L. and Skills sections define your character's mechanical identity.</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         PAGE: SPECIAL
+    ══════════════════════════════════════════════════ -->
+    <div class="page" id="page-special">
+      <div class="page-title">S.P.E.C.I.A.L.</div>
+      <div class="page-intro">// PRIMARY ATTRIBUTE SYSTEM — SEVEN FOUNDATIONAL STATISTICS //</div>
+
+      <p>Every character in Fallout 2D20 is defined by seven core attributes, collectively known as <strong>S.P.E.C.I.A.L.</strong> These attributes range from <strong>4 to 12</strong> (default 7; 5 points to distribute at character creation). They serve as the target number added to a Skill rank when determining test difficulty targets.</p>
+
+      <div class="callout rule">
+        <div class="callout-label">The Formula</div>
+        <p><strong>Target Number (TN) = Attribute + Skill Rank</strong><br>
+        Roll 2d20 against this number. Each die that rolls equal to or under the TN scores one success. <strong>Difficulty</strong> sets how many successes you need.</p>
+      </div>
+
+      <div class="grid-3" style="margin-top:1.5rem;">
+        <div class="stat-block">
+          <div class="stat-name">S</div>
+          <div class="stat-abbr">STRENGTH</div>
+          <div style="margin:0.5rem 0;"><div class="progress-bar"><div class="progress-fill" style="width:70%"></div></div></div>
+          <div class="stat-desc">Raw physical power. Governs melee attacks, Athletics, and carrying capacity. High Strength lets you hit harder and lug more gear.</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-name">P</div>
+          <div class="stat-abbr">PERCEPTION</div>
+          <div style="margin:0.5rem 0;"><div class="progress-bar"><div class="progress-fill" style="width:55%"></div></div></div>
+          <div class="stat-desc">Senses and awareness. Governs ranged attacks, Survival (spotting danger), and noticing environmental details. Critical for snipers.</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-name">E</div>
+          <div class="stat-abbr">ENDURANCE</div>
+          <div style="margin:0.5rem 0;"><div class="progress-bar"><div class="progress-fill" style="width:65%"></div></div></div>
+          <div class="stat-desc">Toughness and vitality. Determines your Hit Points (HP = Endurance × 2), resistance to radiation and disease, and Resistance values.</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-name">C</div>
+          <div class="stat-abbr">CHARISMA</div>
+          <div style="margin:0.5rem 0;"><div class="progress-bar"><div class="progress-fill" style="width:50%"></div></div></div>
+          <div class="stat-desc">Social magnetism and leadership. Governs Barter, Persuasion, and leading companions. High Charisma makes NPCs your allies.</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-name">I</div>
+          <div class="stat-abbr">INTELLIGENCE</div>
+          <div style="margin:0.5rem 0;"><div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div></div>
+          <div class="stat-desc">Technical knowledge and reasoning. Governs Medicine, Science, and repairing tech. Determines number of Skill points at character creation.</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-name">A</div>
+          <div class="stat-abbr">AGILITY</div>
+          <div style="margin:0.5rem 0;"><div class="progress-bar"><div class="progress-fill" style="width:75%"></div></div></div>
+          <div class="stat-desc">Speed and dexterity. Governs Initiative, Sneak, and the number of Action Points you have in combat. Critical for all combat styles.</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-name">L</div>
+          <div class="stat-abbr">LUCK</div>
+          <div style="margin:0.5rem 0;"><div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div></div>
+          <div class="stat-desc">Fortune and fate. Determines your personal Luck point pool. Used to buy extra dice or spend like Momentum — but only for yourself.</div>
+        </div>
+      </div>
+
+      <h2>Derived Statistics</h2>
+      <table>
+        <tr><th>Statistic</th><th>Calculation</th><th>Notes</th></tr>
+        <tr><td><strong>Hit Points (HP)</strong></td><td>Endurance × 2</td><td>Reaches 0 = Injured; -10 below = Incapacitated</td></tr>
+        <tr><td><strong>Initiative</strong></td><td>Agility + Perception</td><td>Higher acts earlier in combat; ties broken by Luck</td></tr>
+        <tr><td><strong>Melee Damage Bonus</strong></td><td>Strength ÷ 2 (round down)</td><td>Added to melee weapons' CD rolls</td></tr>
+        <tr><td><strong>Defense</strong></td><td>1 (base)</td><td>Attackers must exceed this number of successes</td></tr>
+        <tr><td><strong>Carry Weight</strong></td><td>Strength × 10 lbs</td><td>Exceeding causes Slowed condition</td></tr>
+        <tr><td><strong>Luck Points</strong></td><td>= Luck attribute</td><td>Refreshes after Major Rest; can spend as personal Momentum</td></tr>
+        <tr><td><strong>Skill Points (creation)</strong></td><td>Intelligence × 2</td><td>Distribute among skills at character creation</td></tr>
+      </table>
+
+      <h2>Attribute Checks Without a Skill</h2>
+      <p>When no skill directly applies, the GM may call for a raw Attribute test. The Target Number is simply the Attribute value alone, and the player rolls 2d20 against that number at Difficulty 1 (or higher for harder challenges).</p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         PAGE: SKILLS
+    ══════════════════════════════════════════════════ -->
+    <div class="page" id="page-skills">
+      <div class="page-title">SKILLS</div>
+      <div class="page-intro">// TRAINED COMPETENCIES — RANK 0 TO 6 //</div>
+
+      <p>Skills represent trained knowledge and practice. Each skill is linked to a <strong>governing attribute</strong>. A character's <strong>Skill Rank</strong> ranges from 0 (untrained) to 6 (master). The <strong>Target Number</strong> for any test is <em>Attribute + Skill Rank</em>.</p>
+
+      <div class="callout rule">
+        <div class="callout-label">Skill Advancement</div>
+        <p>During character creation you receive <strong>Intelligence × 2</strong> skill points to distribute (max rank 2 per skill at creation). Additional ranks are purchased with <strong>Experience Points (XP)</strong> between sessions, with each rank costing XP equal to the new rank × 100.</p>
+      </div>
+
+      <h2>Skill List</h2>
+
+      <div style="margin-top:1rem;">
+        <div class="skill-item">
+          <div class="skill-name">Athletics</div>
+          <div class="skill-attr">STR / AGI</div>
+          <div>Running, climbing, jumping, swimming, throwing. Used when physical feats of endurance or raw movement are attempted.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Barter</div>
+          <div class="skill-attr">CHR</div>
+          <div>Haggling, trading, evaluating the worth of goods and services. Essential for getting fair deals from merchants.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Big Guns</div>
+          <div class="skill-attr">STR</div>
+          <div>Heavy weapons — miniguns, missile launchers, Fat Man nukes, flamers. Devastating and heavy.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Energy Weapons</div>
+          <div class="skill-attr">PER</div>
+          <div>Laser pistols, plasma rifles, gauss weapons, and other energy-based ranged weapons.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Explosives</div>
+          <div class="skill-attr">PER</div>
+          <div>Grenades, mines, dynamite, and other explosive devices — crafting, planting, and throwing them accurately.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Guns</div>
+          <div class="skill-attr">AGI / PER</div>
+          <div>Ballistic firearms — pistols, rifles, shotguns, SMGs. The bread-and-butter combat skill of the Wasteland.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Lockpick</div>
+          <div class="skill-attr">PER</div>
+          <div>Opening locked containers, doors, safes, and handcuffs. Requires bobby pins or lock picks.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Medicine</div>
+          <div class="skill-attr">INT</div>
+          <div>First aid, surgery, treating diseases and poisoning, using Stimpaks and RadAway effectively.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Melee Weapons</div>
+          <div class="skill-attr">STR</div>
+          <div>Blades, bats, sledgehammers, and other hand-held weapons. Close-range brutality.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Persuasion</div>
+          <div class="skill-attr">CHR</div>
+          <div>Speech, intimidation, seduction, deception. Changing minds without resorting to violence.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Repair</div>
+          <div class="skill-attr">INT</div>
+          <div>Fixing weapons, armor, and mechanical devices. Crafting improvised items from scrap.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Science</div>
+          <div class="skill-attr">INT</div>
+          <div>Hacking terminals, chemistry, robotics, advanced technology. Knowledge of pre-war science.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Sneak</div>
+          <div class="skill-attr">AGI</div>
+          <div>Moving silently, pickpocketing, hiding from sight. Essential for stealth-based characters.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Survival</div>
+          <div class="skill-attr">END / PER</div>
+          <div>Finding food and water, navigation, tracking, cooking, identifying hostile fauna and flora.</div>
+        </div>
+        <div class="skill-item">
+          <div class="skill-name">Unarmed</div>
+          <div class="skill-attr">STR / AGI</div>
+          <div>Punching, kicking, power fists, and other empty-handed combat. Fighting with your bare hands in the Wasteland.</div>
+        </div>
+      </div>
+
+      <h2>Skill Ranks</h2>
+      <table>
+        <tr><th>Rank</th><th>Name</th><th>Bonus</th></tr>
+        <tr><td>0</td><td>Untrained</td><td>TN = Attribute only; no special abilities</td></tr>
+        <tr><td>1</td><td>Novice</td><td>Basic competence; access to Rank 1 perk prerequisites</td></tr>
+        <tr><td>2</td><td>Trained</td><td>Reliable performance in routine tasks</td></tr>
+        <tr><td>3</td><td>Expert</td><td>Access to advanced Perks; can attempt complex tasks</td></tr>
+        <tr><td>4</td><td>Master</td><td>Exceptional skill; may reduce difficulty of routine tasks</td></tr>
+        <tr><td>5</td><td>Virtuoso</td><td>Among the best in the Wasteland</td></tr>
+        <tr><td>6</td><td>Legend</td><td>Pre-war specialist level; max rank achievable</td></tr>
+      </table>
+
+      <div class="callout tip">
+        <div class="callout-label">Tagged Skills</div>
+        <p>At character creation, choose <strong>3 Tagged Skills</strong>. Each tagged skill immediately gains <strong>+2 ranks</strong> for free. Tagged skills represent your character's core competencies and background.</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         PAGE: CORE RULES
+    ══════════════════════════════════════════════════ -->
+    <div class="page" id="page-core">
+      <div class="page-title">CORE RULES</div>
+      <div class="page-intro">// DICE TESTS, MOMENTUM, ACTION POINTS, AND LUCK //</div>
+
+      <h2>The Test</h2>
+      <p>Whenever a character attempts something with <strong>meaningful risk and uncertain outcome</strong>, the GM calls for a test. Routine tasks with no real failure consequences don't require rolls.</p>
+
+      <div class="dice-row">
+        <div class="die">d20<div class="die-label">TEST DIE</div></div>
+        <div class="die" style="border-color: var(--green); color: var(--green); text-shadow: 0 0 10px rgba(57,255,20,0.5);">CD<div class="die-label">DAMAGE</div></div>
+      </div>
+
+      <div class="callout rule">
+        <div class="callout-label">Step-by-Step Test Resolution</div>
+        <p>
+        <strong>1. State Intent</strong> — Describe what you're trying to do.<br>
+        <strong>2. Choose Skill</strong> — GM approves the relevant skill.<br>
+        <strong>3. Set Difficulty (0–5)</strong> — Number of successes needed.<br>
+        <strong>4. Roll Pool</strong> — Start with 2d20; buy up to 3 extra d20s with Momentum or Luck (1 per die).<br>
+        <strong>5. Count Successes</strong> — Each d20 ≤ TN (Attribute + Skill) = 1 success.<br>
+        <strong>6. Critical Successes</strong> — Any die ≤ Skill Rank = 2 successes (a <em>Focus</em>).<br>
+        <strong>7. Resolve Outcome</strong> — Successes ≥ Difficulty = success. Extra successes become Momentum.<br>
+        <strong>8. Complications</strong> — Each die rolling <strong>20</strong> triggers a Complication (GM gains 1 AP).
+        </p>
+      </div>
+
+      <h2>Difficulty Scale</h2>
+      <table>
+        <tr><th>Difficulty</th><th>Name</th><th>Example</th></tr>
+        <tr><td><span class="badge">D0</span></td><td>Automatic</td><td>Picking up an item, walking forward — no roll needed</td></tr>
+        <tr><td><span class="badge">D1</span></td><td>Simple</td><td>Shooting a stationary target at close range</td></tr>
+        <tr><td><span class="badge">D2</span></td><td>Average</td><td>Standard combat attack; picking a basic lock</td></tr>
+        <tr><td><span class="badge">D3</span></td><td>Hard</td><td>Hacking a protected terminal; surgery in the field</td></tr>
+        <tr><td><span class="badge">D4</span></td><td>Daunting</td><td>Persuading a suspicious enemy faction leader</td></tr>
+        <tr><td><span class="badge">D5</span></td><td>Formidable</td><td>Disarming a nuke with no tools; open-heart surgery</td></tr>
+      </table>
+
+      <h2>Momentum</h2>
+      <p>Momentum is a <strong>shared party pool</strong> (not individual) representing the team's collective edge, preparation, and flow. It resets to 0 at the start of each session (the GM may allow carryover).</p>
+
+      <table>
+        <tr><th>Spend</th><th>Cost</th><th>Effect</th></tr>
+        <tr><td>Extra Die</td><td>1 Momentum</td><td>Add 1d20 to a roll (max 3 extra)</td></tr>
+        <tr><td>Increase Damage</td><td>1 Momentum</td><td>Roll +1 Combat Die (CD) for damage</td></tr>
+        <tr><td>Create Opportunity</td><td>2 Momentum</td><td>Create an Asset — a temporary situational advantage</td></tr>
+        <tr><td>Obtain Information</td><td>1 Momentum</td><td>Ask GM one factual question about the scene</td></tr>
+        <tr><td>Swift Action</td><td>2 Momentum</td><td>Take one additional Minor Action this turn</td></tr>
+        <tr><td>Keep Initiative</td><td>1 Momentum</td><td>Act before an enemy in the same Initiative slot</td></tr>
+        <tr><td>Bonus Turn (Ally)</td><td>2 Momentum</td><td>Give an ally an extra turn before their next initiative</td></tr>
+      </table>
+
+      <div class="callout warning">
+        <div class="callout-label">Momentum Cap</div>
+        <p>The party Momentum pool has a maximum of <strong>6 points</strong> at any time. Excess Momentum is lost at end of a player's turn. Spend it or lose it!</p>
+      </div>
+
+      <h2>Action Points (AP)</h2>
+      <p>Action Points are the <strong>Game Master's resource</strong>, the dark mirror of Momentum. The GM uses AP to make enemies more dangerous and reactive.</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">How the GM Gains AP</div>
+          <p>• Players generate Complications (rolling 20s)<br>
+          • Players purchase extra dice with Momentum<br>
+          • GM starts each scene with <strong>1 AP per player</strong><br>
+          • Some NPCs and encounters grant bonus AP</p>
+        </div>
+        <div class="card">
+          <div class="card-title">How the GM Spends AP</div>
+          <p>• Give NPCs extra actions (1 AP each)<br>
+          • Introduce environmental hazards (1–2 AP)<br>
+          • Have enemies act earlier in initiative (1 AP)<br>
+          • Trigger Complications as narrative events (varies)</p>
+        </div>
+      </div>
+
+      <h2>Luck</h2>
+      <p>Personal to each character, Luck points can be spent exactly like Momentum — but <strong>only for that character's own rolls</strong>. They cannot be pooled or shared. Luck points refresh after a <strong>Major Rest</strong> (overnight) or via certain Perks.</p>
+
+      <h2>Focus and Complications</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🎯 Focus (Critical Success)</div>
+          <p>When a d20 rolls equal to or under your <strong>Skill Rank alone</strong> (not the full TN), it generates <strong>2 successes</strong> instead of 1. Characters with high skill ranks generate criticals more often, representing deep expertise.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">💥 Complications</div>
+          <p>Any die rolling <strong>exactly 20</strong> is a Complication. The GM gains <strong>1 AP</strong> and may narrate a narrative complication — a gun jams, you slip, an NPC notices you. The test can still succeed with complications.</p>
+        </div>
+      </div>
+
+      <h2>Opposed Tests</h2>
+      <p>When two characters directly contest each other (sneaking past a guard, arm wrestling, fast-drawing), both roll tests simultaneously. The character with <strong>more successes wins</strong>. Ties go to the <em>active</em> character (whoever initiated the contest). Ties can also be broken by Luck — higher attribute breaks the tie.</p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         PAGE: COMBAT
+    ══════════════════════════════════════════════════ -->
+    <div class="page" id="page-combat">
+      <div class="page-title">COMBAT</div>
+      <div class="page-intro">// VIOLENCE IS RARELY THE ANSWER — BUT IT'S USUALLY AN ANSWER //</div>
+
+      <h2>Initiative</h2>
+      <p>At the start of combat, each participant rolls an <strong>Initiative test</strong>: roll 2d20 against <em>Agility + Perception</em> (Difficulty 1). Count successes — higher successes go first. Ties are broken by the <strong>Agility + Perception</strong> total, then by Luck attribute.</p>
+
+      <div class="callout rule">
+        <div class="callout-label">Turn Order</div>
+        <p>Play alternates: one player character acts, then one enemy acts (GM spends 1 AP per extra enemy action). This continues until all characters have acted, ending the <strong>Round</strong>. A new Round begins with any leftover Momentum reduced by 1.</p>
+      </div>
+
+      <h2>Action Economy</h2>
+      <p>On your turn, you have <strong>Action Points</strong> (NOT the GM's AP — these are personal combat actions) based on Agility. Most characters get:</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Major Actions (1 per turn)</div>
+          <p>Make an Attack, Sprint (Agility × 2 yards), Use an Item (Stimpak, etc.), Aim (reduce difficulty of next attack), Help an ally.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Minor Actions (1 per turn)</div>
+          <p>Draw or holster a weapon, Reload, Open a door, Take Cover, move up to Agility yards (standard move).</p>
+        </div>
+      </div>
+
+      <div class="callout tip">
+        <div class="callout-label">Extra Actions</div>
+        <p>Spend <strong>2 Momentum</strong> to gain an extra Minor Action. The AP resource (GM's) is different from personal combat actions — don't confuse them!</p>
+      </div>
+
+      <h2>Making an Attack</h2>
+      <div class="callout rule">
+        <div class="callout-label">Attack Sequence</div>
+        <p>
+        <strong>1.</strong> Declare target and weapon<br>
+        <strong>2.</strong> Determine base Difficulty (usually 1; modified by range, cover, etc.)<br>
+        <strong>3.</strong> Roll Skill test (Guns, Melee, etc.) against TN<br>
+        <strong>4.</strong> If successes ≥ Difficulty: <strong>Hit!</strong> Roll damage dice (Combat Dice)<br>
+        <strong>5.</strong> Apply target's Physical/Energy Resistance<br>
+        <strong>6.</strong> Remaining damage reduces target's HP
+        </p>
+      </div>
+
+      <h2>Range Bands</h2>
+      <table>
+        <tr><th>Band</th><th>Distance</th><th>Difficulty Mod</th></tr>
+        <tr><td><span class="badge">Reach</span></td><td>Adjacent (0–2 yards)</td><td>Standard for melee; +1 difficulty for most ranged</td></tr>
+        <tr><td><span class="badge">Close</span></td><td>3–10 yards</td><td>Base difficulty</td></tr>
+        <tr><td><span class="badge">Medium</span></td><td>11–50 yards</td><td>+1 difficulty</td></tr>
+        <tr><td><span class="badge">Long</span></td><td>51–250 yards</td><td>+2 difficulty</td></tr>
+        <tr><td><span class="badge">Extreme</span></td><td>251–500+ yards</td><td>+3 difficulty; only sniper rifles reach</td></tr>
+      </table>
+
+      <h2>Damage &amp; Combat Dice</h2>
+      <p>Damage is rolled with <strong>Combat Dice (CD)</strong> — a custom d6 with values: blank (0), 1, 1, 2, 2, <em>Effect</em> ★. The <strong>Effect</strong> face triggers a weapon's special effect (ammo type, critical injury, etc.).</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Physical Resistance (PR)</div>
+          <p>Comes from armor. Subtract PR from total damage after dice are rolled. Damage reduced to 0 deals no harm, though Effects may still trigger.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Energy Resistance (ER)</div>
+          <p>Applies specifically to energy weapon damage. Heavy metal armor has high PR; lighter suits may have better ER. Radiation damage bypasses most resistances.</p>
+        </div>
+      </div>
+
+      <h2>Hit Points &amp; Injury</h2>
+      <table>
+        <tr><th>HP Threshold</th><th>Status</th><th>Effect</th></tr>
+        <tr><td>Full HP</td><td>Healthy</td><td>No penalties</td></tr>
+        <tr><td>≤ Half HP</td><td>Injured</td><td>+1 difficulty to all physical tests</td></tr>
+        <tr><td>0 HP</td><td>Downed</td><td>Incapacitated; must make Endurance test or fall unconscious</td></tr>
+        <tr><td>0 HP + excess damage</td><td>Dying</td><td>Roll on Critical Injury table; may become permanent</td></tr>
+      </table>
+
+      <h2>Critical Injuries</h2>
+      <p>When a character reaches 0 HP and still takes damage, roll on the <strong>Critical Injury</strong> table using the excess damage as a modifier. Injuries range from a <em>Concussion</em> to <em>Gruesome Death</em> and may require Medicine rolls to stabilize.</p>
+
+      <h2>Cover &amp; Concealment</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Cover (Hard)</div>
+          <p>Walls, cars, concrete barriers. Attackers must spend <strong>1 success</strong> to bypass cover before damage can be applied. Cover has its own HP and can be destroyed.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Concealment (Soft)</div>
+          <p>Smoke, darkness, bushes. Adds <strong>+1 difficulty</strong> to attacks against the concealed character. Does not stop damage once hit.</p>
+        </div>
+      </div>
+
+      <h2>Conditions</h2>
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">BLINDED <span class="accordion-arrow">▶</span></div>
+        <div class="accordion-body">All visual Perception tests and ranged attacks suffer +2 difficulty. Cannot perform aimed attacks. Moving is halved without assistance.</div>
+      </div>
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">PRONE <span class="accordion-arrow">▶</span></div>
+        <div class="accordion-body">Standing up costs a Minor Action. Melee attackers gain +1 difficulty to hit a prone target. Ranged attacks against prone targets also gain +1 difficulty at Close range and beyond; attackers at Reach have easier time (+0). Shooting while prone gives +1 die for Aimed attacks.</div>
+      </div>
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">SLOWED <span class="accordion-arrow">▶</span></div>
+        <div class="accordion-body">Movement is halved (round down). Cannot Sprint. Usually caused by heavy encumbrance, leg injury, or difficult terrain.</div>
+      </div>
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">STUNNED <span class="accordion-arrow">▶</span></div>
+        <div class="accordion-body">Cannot take Major Actions this turn. Minor Actions still permitted. Stunned characters cannot take Reactions. Typically lasts 1 round unless otherwise specified.</div>
+      </div>
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">POISONED <span class="accordion-arrow">▶</span></div>
+        <div class="accordion-body">Suffer 1 damage (ignoring Resistance) at the start of each of your turns. Medicine test (D2) removes the condition. RadAway may help with radiation-based poisons.</div>
+      </div>
+      <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAccordion(this)">IRRADIATED <span class="accordion-arrow">▶</span></div>
+        <div class="accordion-body">Track Radiation separately as a secondary HP pool (Rads). Accumulated Rads reduce max HP by 1 per 5 Rads. At max Rads = max HP value, the character dies. RadAway reduces Rads; Rad Resistance reduces incoming radiation damage.</div>
+      </div>
+
+      <h2>V.A.T.S.</h2>
+      <p>The Vault-Tec Assisted Targeting System is represented as a special attack option in 2D20. Activating V.A.T.S. costs <strong>2 Action Points</strong> (personal) or <strong>3 Luck points</strong>. While active:</p>
+      <div class="card">
+        <div class="card-title">V.A.T.S. Benefits</div>
+        <p>• Target a <strong>specific body location</strong> (head, arm, leg, torso) to apply targeted effects<br>
+        • Reduce attack Difficulty by <strong>1</strong><br>
+        • On a hit, the attack automatically inflicts a <strong>location-specific Critical Injury</strong> on a Complication<br>
+        • <em>Head shot</em>: +2 damage; <em>Limb shot</em>: Slowed or Disarmed; <em>Torso</em>: standard hit<br>
+        • V.A.T.S. bypasses the first point of cover the target is using</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         PAGE: PERKS
+    ══════════════════════════════════════════════════ -->
+    <div class="page" id="page-perks">
+      <div class="page-title">PERKS &amp; TRAITS</div>
+      <div class="page-intro">// CHARACTER CUSTOMIZATION — SPECIAL ABILITIES AND BACKGROUND FEATURES //</div>
+
+      <p>Perks are special abilities that give characters unique mechanical advantages. Each Perk has a <strong>Rank requirement</strong> (tied to a skill or attribute threshold) and some have multiple tiers. Characters receive Perks through <strong>leveling up</strong> or as rewards for significant in-game achievements.</p>
+
+      <h2>Gaining Perks</h2>
+      <p>Characters begin with <strong>1 Perk at creation</strong> and gain additional Perks as they accumulate <strong>Experience Points (XP)</strong>. Perks are purchased at Perk Thresholds — typically every 1,000 XP. Prerequisites (skill ranks, attribute minimums) must be met.</p>
+
+      <div class="callout tip">
+        <div class="callout-label">Traits vs. Perks</div>
+        <p><strong>Traits</strong> are selected at character creation and represent intrinsic qualities — they always come with both a benefit AND a drawback. <strong>Perks</strong> are earned through play and are purely advantageous.</p>
+      </div>
+
+      <h2>Sample Traits</h2>
+      <table>
+        <tr><th>Trait</th><th>Benefit</th><th>Drawback</th></tr>
+        <tr><td><strong>Small Frame</strong></td><td>+1 Agility</td><td>Limb injuries are more severe; crit injury threshold reduced by 1</td></tr>
+        <tr><td><strong>Good Natured</strong></td><td>+1 rank to non-combat skills (Medicine, Science, Repair, etc.)</td><td>–1 rank to all combat skills</td></tr>
+        <tr><td><strong>Gifted</strong></td><td>+1 to each S.P.E.C.I.A.L. attribute</td><td>Lose 5 starting skill points; skills cost more XP to advance</td></tr>
+        <tr><td><strong>Kamikaze</strong></td><td>+2 Initiative successes; always act first in ties</td><td>Cannot take Reactions; lose access to Dodge</td></tr>
+        <tr><td><strong>Trigger Discipline</strong></td><td>Ranged attacks generate no Complications on Focus rolls</td><td>–1 die on all ranged attack rolls</td></tr>
+        <tr><td><strong>Fast Metabolism</strong></td><td>Stimpaks restore double HP</td><td>RadAway is 50% less effective</td></tr>
+      </table>
+
+      <h2>Sample Perks</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">IRON FIST <span class="badge">UNARMED 2</span></div>
+          <p><strong>Tier 1:</strong> Unarmed attacks deal +1 CD damage.<br>
+          <strong>Tier 2:</strong> (Unarmed 4) Unarmed attacks gain the <em>Stun</em> weapon quality on an Effect result.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">SNIPER <span class="badge">PER 6</span> <span class="badge">GUNS 3</span></div>
+          <p>When taking an Aimed action before firing, reduce the attack's Difficulty by 2 instead of 1. At extreme range, treat difficulty as Long range.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">MEDIC <span class="badge">MED 3</span></div>
+          <p><strong>Tier 1:</strong> Stimpaks restore 2 additional HP. Field surgery is Difficulty 2 instead of 3.<br>
+          <strong>Tier 2:</strong> (Med 5) Can use Medicine to restore HP during combat as a Minor Action.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">MYSTERIOUS STRANGER <span class="badge">LUCK 8</span></div>
+          <p>Once per session, when you spend 3+ Luck points, an NPC ally (the Mysterious Stranger) appears and makes one ranged attack before disappearing. The GM controls the Stranger.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">ROBOTICS EXPERT <span class="badge">SCI 3</span></div>
+          <p>Tests to hack or disable robots are reduced by 1 Difficulty. On a successful Science test, you may command a robot to stand down or follow a simple order for 1 round.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">TOUGHNESS <span class="badge">END 5</span></div>
+          <p>Gain +1 Physical Resistance even without armor. This stacks with worn armor. At END 7, this increases to +2.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">ACTION GIRL/BOY <span class="badge">AGI 6</span></div>
+          <p>Gain 1 additional Minor Action on your turn. This is always available — you have exceptional reflexes.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">RAD RESISTANT <span class="badge">END 4</span></div>
+          <p>Gain +2 Rad Resistance permanently. RadAway treatments restore double the normal Radiation points. You're built for the Wasteland.</p>
+        </div>
+      </div>
+
+      <h2>Weapon Perks</h2>
+      <p>Many Perks are weapon-specific — unlocking new attack modes, adding bonus dice, or granting access to unique qualities. Always check the Perk's prerequisite skill and tier before purchasing.</p>
+
+      <table>
+        <tr><th>Weapon Type</th><th>Example Perks</th></tr>
+        <tr><td>Guns</td><td>Gunslinger, Commando, Rifleman, Spray and Pray</td></tr>
+        <tr><td>Energy Weapons</td><td>Laser Commander, Nuclear Physicist, Science! Perk</td></tr>
+        <tr><td>Melee</td><td>Blades, Big Leagues, Iron Fist, Ninja</td></tr>
+        <tr><td>Explosives</td><td>Demolition Expert, Fire in the Hole, Grenadier</td></tr>
+        <tr><td>Unarmed</td><td>Iron Fist, Martial Arts, Power Punch</td></tr>
+      </table>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         PAGE: SURVIVAL
+    ══════════════════════════════════════════════════ -->
+    <div class="page" id="page-survival">
+      <div class="page-title">SURVIVAL &amp; DOWNTIME</div>
+      <div class="page-intro">// THE WASTELAND WILL KILL YOU IF YOU LET IT //</div>
+
+      <h2>Rest &amp; Recovery</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">⏱ Minor Rest (1 Hour)</div>
+          <p>Spend 1 Stimpak to recover <strong>Endurance + Medicine rank</strong> in HP. Recover 2 Luck points. Momentum resets to 0. Cannot be done mid-combat.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">🌙 Major Rest (8 Hours)</div>
+          <p>Recover <strong>all HP</strong>. Refresh all <strong>Luck points</strong>. Treat one Minor Injury. Requires safe shelter and food/water. Radiaton and disease persist.</p>
+        </div>
+      </div>
+
+      <h2>Hunger, Thirst &amp; Sleep</h2>
+      <p>The game tracks basic survival needs using the <strong>Deprivation</strong> mechanic. At the GM's discretion (typically every 24 hours without meeting a need), characters must make <strong>Endurance tests</strong> or suffer penalties:</p>
+
+      <table>
+        <tr><th>Need</th><th>Initial Penalty</th><th>Severe Penalty</th></tr>
+        <tr><td>Food</td><td>+1 difficulty to Endurance/Strength tests after 24h</td><td>Lose 1 HP per hour after 72h without food</td></tr>
+        <tr><td>Water</td><td>+1 difficulty to all tests after 12h</td><td>Lose 2 HP per hour after 24h without water</td></tr>
+        <tr><td>Sleep</td><td>+1 difficulty to Intelligence/Agility tests after 24h</td><td>Hallucinations (Complications more likely) after 48h</td></tr>
+      </table>
+
+      <h2>Radiation</h2>
+      <p>The Fallout Wasteland is suffused with deadly radiation. Radiation is tracked as <strong>Rads</strong> — a separate pool that gradually reduces your maximum HP.</p>
+
+      <div class="callout warning">
+        <div class="callout-label">Radiation Rules</div>
+        <p>For every <strong>5 Rads</strong> accumulated, maximum HP decreases by 1 permanently (until cured). If your Rads equal your current maximum HP, you die. <strong>RadAway</strong> removes 5 Rads. <strong>Rad-X</strong> grants temporary Rad Resistance (+2 ER vs. radiation for 1 hour).</p>
+      </div>
+
+      <h2>Disease</h2>
+      <p>Exposure to contaminated water, disease-carrying creatures, or filthy environments can infect characters. Each disease has a <strong>Difficulty</strong> to resist (Endurance test when exposed) and a set of ongoing penalties until treated with Medicine or an Antibiotics item.</p>
+
+      <h2>Crafting &amp; Repair</h2>
+      <p>The Wasteland is defined by making do with what you have. The <strong>Repair</strong> skill allows characters to fix broken gear, while <strong>Science</strong> enables crafting advanced modifications.</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Weapon Maintenance</div>
+          <p>Weapons degrade after heavy use. A degraded weapon generates Complications on a 19–20 instead of just 20. A Repair test (Difficulty based on weapon complexity) restores normal function. Requires spare parts.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Crafting New Items</div>
+          <p>Craft weapons, food, chems, and explosives with appropriate skill tests. The GM sets Difficulty (usually 2–3), and you need the right components. Extra Momentum successes improve quality or yield multiple items.</p>
+        </div>
+      </div>
+
+      <h2>Companions</h2>
+      <p>Companions are NPCs who travel with the party. Each has their own <strong>S.P.E.C.I.A.L. stats</strong>, Skills, and unique Perks. On a player's turn, they may use their Major Action to command a companion (Simple order: no roll; Complex order: Charisma + Persuasion test, D1).</p>
+
+      <div class="callout tip">
+        <div class="callout-label">Companion Loyalty</div>
+        <p>Major decisions — especially morally significant ones — affect companion loyalty. Low loyalty companions may refuse orders, leave the party, or even turn hostile. Gifts, completing companion quests, and respecting their values all build loyalty.</p>
+      </div>
+
+      <h2>Caps &amp; Economy</h2>
+      <p>Bottle caps are the currency of the Wasteland. The <strong>Barter</strong> skill governs trade, and the GM sets fair prices. Extra successes on a Barter test can lower prices or secure better deals. Some items are also traded in <strong>Junk</strong> — raw materials used for crafting.</p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         PAGE: GM SCREEN
+    ══════════════════════════════════════════════════ -->
+    <div class="page" id="page-gm">
+      <div class="page-title">GM SCREEN</div>
+      <div class="page-intro">// QUICK REFERENCE FOR GAME MASTERS //</div>
+
+      <div class="grid-2">
+        <div>
+          <h2>Difficulty Quick Reference</h2>
+          <table>
+            <tr><th>D#</th><th>Situation</th></tr>
+            <tr><td>0</td><td>Automatic — no roll needed</td></tr>
+            <tr><td>1</td><td>Simple task; routine for skilled characters</td></tr>
+            <tr><td>2</td><td>Average task; most combat actions</td></tr>
+            <tr><td>3</td><td>Hard; complex hacks, surgeries, social feats</td></tr>
+            <tr><td>4</td><td>Daunting; pushing physical/mental limits</td></tr>
+            <tr><td>5</td><td>Formidable; near-impossible feats</td></tr>
+          </table>
+
+          <h2>Modifiers to Difficulty</h2>
+          <table>
+            <tr><th>Situation</th><th>Mod</th></tr>
+            <tr><td>Target in Cover</td><td>+1</td></tr>
+            <tr><td>Target Prone (Ranged)</td><td>+1</td></tr>
+            <tr><td>Attacker Prone (Melee vs.)</td><td>+1</td></tr>
+            <tr><td>Aiming (before attack)</td><td>–1</td></tr>
+            <tr><td>Firing into melee (ally near)</td><td>+1</td></tr>
+            <tr><td>Target Blinded</td><td>–1 to resist</td></tr>
+            <tr><td>Attacker Blinded</td><td>+2</td></tr>
+            <tr><td>Called Shot (V.A.T.S.)</td><td>+1</td></tr>
+            <tr><td>Range: Medium</td><td>+1</td></tr>
+            <tr><td>Range: Long</td><td>+2</td></tr>
+            <tr><td>Range: Extreme</td><td>+3</td></tr>
+          </table>
+        </div>
+
+        <div>
+          <h2>Common NPC Templates</h2>
+          <div class="card">
+            <div class="card-title">Raider (Minion)</div>
+            <p>HP: 8 | PR: 1 | Initiative: 2<br>
+            Guns 2 / Melee 1<br>
+            Attack: Pipe Pistol 3CD, Range Close<br>
+            <em>Minions act on 1 AP each; die at 0 HP with no crit.</em></p>
+          </div>
+          <div class="card">
+            <div class="card-title">Raider Captain (Nemesis)</div>
+            <p>HP: 18 | PR: 3 | Initiative: 4<br>
+            Guns 3 / Melee 3 / Athletics 2<br>
+            Attack: Assault Rifle 5CD, Range Medium<br>
+            <em>Nemeses have crit injury rolls and special abilities.</em></p>
+          </div>
+          <div class="card">
+            <div class="card-title">Feral Ghoul (Minion)</div>
+            <p>HP: 10 | PR: 0 | Initiative: 5<br>
+            Unarmed 3<br>
+            Attack: Claws 3CD, Range Reach<br>
+            Special: Radiation aura — 1 Rad per round in Reach</p>
+          </div>
+          <div class="card">
+            <div class="card-title">Deathclaw (Boss)</div>
+            <p>HP: 35 | PR: 5 | Initiative: 6<br>
+            Unarmed 6<br>
+            Attack: Claws 8CD, Range Reach | Charge: move + attack<br>
+            Special: Armor-shredding claws ignore 3 PR</p>
+          </div>
+        </div>
+      </div>
+
+      <h2>Combat Dice Cheat Sheet</h2>
+      <p>The Combat Die (CD) is a custom d6. Results:</p>
+      <table>
+        <tr><th>Face</th><th>Value</th><th>Frequency</th></tr>
+        <tr><td>Blank</td><td>0 damage</td><td>2 faces</td></tr>
+        <tr><td>1</td><td>1 damage</td><td>2 faces</td></tr>
+        <tr><td>2</td><td>2 damage</td><td>1 face</td></tr>
+        <tr><td>★ Effect</td><td>1 damage + weapon effect</td><td>1 face</td></tr>
+      </table>
+      <p>Average per CD ≈ <strong>1 damage</strong>. Weapons list their base CD (e.g., "3CD" = roll 3 combat dice).</p>
+
+      <h2>Momentum Spend Quick Reference</h2>
+      <table>
+        <tr><th>Effect</th><th>Cost</th><th>Limit</th></tr>
+        <tr><td>Extra d20</td><td>1</td><td>Max 3 extra dice per roll</td></tr>
+        <tr><td>Keep Initiative</td><td>1</td><td>Once per turn</td></tr>
+        <tr><td>Obtain Info</td><td>1</td><td>Per distinct question</td></tr>
+        <tr><td>Bonus Damage</td><td>1</td><td>+1 CD per Momentum spent</td></tr>
+        <tr><td>Create Asset</td><td>2</td><td>Lasts until end of scene</td></tr>
+        <tr><td>Extra Minor Action</td><td>2</td><td>Once per turn</td></tr>
+        <tr><td>Ally Extra Turn</td><td>2</td><td>Not usable in same scene again</td></tr>
+        <tr><td>Recover Item</td><td>2</td><td>Retrieve dropped/nearby item</td></tr>
+      </table>
+
+      <h2>Scene &amp; Adventure Structure</h2>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">AP Starting Pool</div>
+          <p>Start each scene with <strong>1 AP per PC</strong>. Replenished by complications and player purchases. Some encounters specify bonus AP.</p>
+        </div>
+        <div class="card">
+          <div class="card-title">Milestone Rewards</div>
+          <p>Award <strong>50–200 XP</strong> for scene completions, depending on difficulty. Extraordinary roleplay, clever solutions, or completing objectives may grant bonus XP at GM discretion.</p>
+        </div>
+      </div>
+
+      <h2>Critical Injury Quick Table</h2>
+      <table>
+        <tr><th>Roll (2d6 + excess damage)</th><th>Injury</th></tr>
+        <tr><td>2–4</td><td>Concussion — Stunned for 1 round; Complications more likely for 24h</td></tr>
+        <tr><td>5–6</td><td>Broken Limb — Slowed (leg) or –2 Strength (arm) until treated</td></tr>
+        <tr><td>7–8</td><td>Crippled Limb — Permanent until Surgery (Medicine D4) succeeds</td></tr>
+        <tr><td>9–10</td><td>Internal Bleeding — Lose 1 HP per round until Medicine D3 test succeeds</td></tr>
+        <tr><td>11</td><td>Severed Limb — Permanent; requires prosthetic or miraculous medicine</td></tr>
+        <tr><td>12+</td><td>Instant Death — Character is killed outright</td></tr>
+      </table>
+
+      <div class="terminal-box" style="margin-top:2rem;">
+        <div class="prompt">END OF FIELD MANUAL — GOOD LUCK OUT THERE</div>
+        <div class="prompt">REMEMBER: THE HOUSE ALWAYS WINS — UNLESS YOU'RE PLAYING</div>
+        <div class="prompt">VAULT-TEC APPROVES THIS MESSAGE</div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /app -->
+
+<script>
+  function showPage(id) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    // Highlight nav button
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      if (b.getAttribute('onclick')?.includes(id)) b.classList.add('active');
+    });
+    // Scroll to top of content
+    document.getElementById('content').scrollTo(0, 0);
+  }
+
+  function toggleAccordion(header) {
+    header.classList.toggle('open');
+    const body = header.nextElementSibling;
+    body.classList.toggle('open');
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.key === '1') showPage('overview');
+    if (e.key === '2') showPage('special');
+    if (e.key === '3') showPage('skills');
+    if (e.key === '4') showPage('core');
+    if (e.key === '5') showPage('combat');
+    if (e.key === '6') showPage('perks');
+    if (e.key === '7') showPage('survival');
+    if (e.key === '8') showPage('gm');
+  });
+
+  // CRT flicker effect on load
+  document.body.style.opacity = 0;
+  setTimeout(() => {
+    document.body.style.transition = 'opacity 0.3s';
+    document.body.style.opacity = 0.3;
+    setTimeout(() => {
+      document.body.style.opacity = 1;
+      setTimeout(() => {
+        document.body.style.opacity = 0.8;
+        setTimeout(() => { document.body.style.opacity = 1; }, 80);
+      }, 60);
+    }, 100);
+  }, 50);
+</script>
+</body>
+</html>
