@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fallout 2D20 — Armor Vault</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@300;400;600;700&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root {
+  --amber:#f5a623;--amber-dim:#c47d0e;--amber-glow:rgba(245,166,35,0.1);
+  --green:#39ff14;--green-dim:#1a7a00;--green-pale:rgba(57,255,20,0.07);
+  --red:#e63232;--blue:#4ab3f4;--teal:#1abc9c;--teal-pale:rgba(26,188,156,0.08);
+  --orange:#e67e22;--orange-pale:rgba(230,126,34,0.08);
+  --purple:#9b59b6;--purple-pale:rgba(155,89,182,0.1);
+  --dark:#060604;--darker:#030302;
+  --panel:#0f0f0c;--panel2:#161610;--panel3:#1d1d16;
+  --border:rgba(245,166,35,0.2);
+  --text:#d4c4a0;--text-dim:#8a7a5a;--text-bright:#ede0c0;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{background:var(--darker);color:var(--text);font-family:'Share Tech Mono',monospace;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px);pointer-events:none;z-index:9999}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.55) 100%);pointer-events:none;z-index:9998}
+
+/* HEADER */
+#header{position:sticky;top:0;z-index:500;background:var(--panel);border-bottom:2px solid var(--amber);box-shadow:0 0 40px rgba(245,166,35,0.15);padding:0 1.5rem;display:flex;align-items:center;gap:1rem;height:58px}
+.hdr-pip{width:36px;height:36px;flex-shrink:0}
+.hdr-title{font-family:'Oswald',sans-serif;font-size:1.3rem;font-weight:700;color:var(--amber);letter-spacing:4px;text-transform:uppercase;text-shadow:0 0 15px rgba(245,166,35,0.35);line-height:1}
+.hdr-sub{font-size:0.58rem;color:var(--text-dim);letter-spacing:3px;margin-top:2px}
+.hdr-nav{display:flex;gap:0.4rem;margin-left:auto;flex-wrap:wrap}
+.hdr-link{font-family:'Share Tech Mono',monospace;font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;padding:0.3rem 0.7rem;border:1px solid var(--border);color:var(--text-dim);text-decoration:none;transition:all 0.15s;background:transparent;cursor:pointer}
+.hdr-link:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+
+/* CATEGORY TABS */
+#cat-bar{background:var(--panel2);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
+#cat-bar::-webkit-scrollbar{display:none}
+.cat-tab{display:flex;align-items:center;gap:0.45rem;padding:0.7rem 1.1rem;font-family:'Oswald',sans-serif;font-size:0.72rem;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;border-top:none;border-left:none;border-right:none;background:transparent;transition:all 0.15s;flex-shrink:0;margin-bottom:-1px}
+.cat-tab:hover{color:var(--amber)}
+.cat-tab.active{color:var(--amber);border-bottom-color:var(--amber);background:var(--amber-glow)}
+.cat-count{background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.25);font-size:0.58rem;padding:0.05rem 0.3rem;color:var(--amber);font-family:'Share Tech Mono',monospace}
+
+/* TOOLBAR */
+#toolbar{background:var(--panel);border-bottom:1px solid rgba(245,166,35,0.07);padding:0.7rem 1.5rem;display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap}
+#search-box{background:var(--panel2);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:0.4rem 0.8rem;outline:none;transition:border-color 0.15s;width:220px}
+#search-box:focus{border-color:var(--amber);box-shadow:0 0 10px rgba(245,166,35,0.1)}
+#search-box::placeholder{color:var(--text-dim)}
+.filter-select{background:var(--panel2);border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:0.72rem;padding:0.4rem 0.7rem;outline:none;cursor:pointer;appearance:none;min-width:140px}
+.filter-select:focus{border-color:var(--amber);color:var(--text)}
+.filter-select option{background:var(--panel2);color:var(--text)}
+.result-count{font-size:0.68rem;color:var(--text-dim);letter-spacing:2px;margin-left:auto}
+.result-count span{color:var(--amber)}
+.view-toggle{display:flex;gap:0.3rem}
+.view-btn{width:32px;height:32px;background:transparent;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.75rem;transition:all 0.15s}
+.view-btn:hover,.view-btn.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+
+/* LAYOUT */
+#main{display:flex;min-height:calc(100vh - 150px)}
+#sidebar{width:240px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;height:calc(100vh - 150px);position:sticky;top:150px}
+.sb-section{border-bottom:1px solid rgba(245,166,35,0.07)}
+.sb-heading{font-family:'Oswald',sans-serif;font-size:0.58rem;letter-spacing:4px;color:var(--amber);opacity:0.6;padding:0.8rem 1rem 0.3rem;text-transform:uppercase}
+.sb-link{display:flex;align-items:center;justify-content:space-between;padding:0.38rem 1rem 0.38rem 1.4rem;color:var(--text-dim);font-size:0.75rem;cursor:pointer;border-left:2px solid transparent;transition:all 0.12s}
+.sb-link:hover{color:var(--amber);border-left-color:var(--amber);background:var(--amber-glow);padding-left:1.7rem}
+.sb-link.active{color:var(--amber);border-left-color:var(--amber);background:var(--amber-glow)}
+.sb-badge{font-size:0.6rem;color:var(--text-dim);background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.15);padding:0.05rem 0.3rem}
+.legend-row{display:flex;align-items:center;gap:0.5rem;padding:0.25rem 1rem;font-size:0.68rem;color:var(--text-dim)}
+.legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* CONTENT */
+#content{flex:1;overflow-y:auto;padding:1.5rem 1.8rem}
+.cat-header{margin-bottom:1rem;padding-bottom:0.8rem;border-bottom:1px solid var(--border)}
+.cat-title{font-family:'Oswald',sans-serif;font-size:2rem;font-weight:700;color:var(--amber);letter-spacing:4px;text-transform:uppercase;text-shadow:0 0 20px rgba(245,166,35,0.25);line-height:1}
+.cat-desc{font-size:0.76rem;color:var(--text-dim);line-height:1.65;margin-top:0.6rem;max-width:800px}
+
+/* RULE BOX */
+.rule-box{background:var(--panel2);border:1px solid var(--border);border-left:3px solid var(--amber);padding:0.7rem 1rem;font-size:0.76rem;line-height:1.65;color:var(--text-dim);margin:0.8rem 0 1.4rem;max-width:860px}
+.rule-box strong{color:var(--amber)}
+.rule-box .rule-title{font-family:'Oswald',sans-serif;font-size:0.62rem;letter-spacing:3px;color:var(--amber);text-transform:uppercase;margin-bottom:0.35rem}
+.rule-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;max-width:860px;margin:0.8rem 0 1.4rem}
+@media(max-width:600px){.rule-grid{grid-template-columns:1fr}}
+
+/* MODS SECTION */
+.mods-toggle{display:inline-flex;align-items:center;gap:0.5rem;border:1px solid var(--border);padding:0.4rem 0.9rem;font-family:'Share Tech Mono',monospace;font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);background:transparent;cursor:pointer;margin-bottom:1rem;transition:all 0.15s}
+.mods-toggle:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+.mods-toggle.open{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+.mods-panel{display:none;margin-bottom:1.5rem;max-width:860px}
+.mods-panel.open{display:block}
+.mods-cat-title{font-family:'Oswald',sans-serif;font-size:0.65rem;letter-spacing:4px;color:var(--amber);opacity:0.7;text-transform:uppercase;margin:1rem 0 0.4rem;border-bottom:1px solid rgba(245,166,35,0.1);padding-bottom:0.3rem}
+.mods-table{width:100%;border-collapse:collapse;font-size:0.72rem;margin-bottom:0.8rem}
+.mods-table th{background:rgba(245,166,35,0.07);color:var(--amber);font-family:'Oswald',sans-serif;font-size:0.6rem;letter-spacing:2px;padding:0.4rem 0.6rem;border:1px solid var(--border);text-align:left;text-transform:uppercase;white-space:nowrap}
+.mods-table td{padding:0.35rem 0.6rem;border:1px solid rgba(245,166,35,0.07);color:var(--text-dim);vertical-align:middle}
+.mods-table td:first-child{color:var(--text-bright);font-family:'Oswald',sans-serif;font-size:0.78rem;letter-spacing:1px}
+.perk-badge{display:inline-block;font-size:0.58rem;padding:0.05rem 0.3rem;border:1px solid rgba(57,255,20,0.3);color:var(--green);background:var(--green-pale);font-family:'Oswald',sans-serif;letter-spacing:1px;text-transform:uppercase}
+
+/* TABLE */
+.items-table-wrap{overflow-x:auto;margin-bottom:2rem}
+.items-table{width:100%;border-collapse:collapse;font-size:0.75rem;min-width:760px}
+.items-table th{background:rgba(245,166,35,0.09);color:var(--amber);font-family:'Oswald',sans-serif;font-size:0.63rem;letter-spacing:2px;padding:0.5rem 0.7rem;border:1px solid var(--border);text-align:left;text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none}
+.items-table th:hover{background:rgba(245,166,35,0.14)}
+.items-table th .sa{margin-left:4px;opacity:0.4;font-size:0.58rem}
+.items-table th.sorted .sa{opacity:1;color:var(--green)}
+.items-table td{padding:0.45rem 0.7rem;border:1px solid rgba(245,166,35,0.07);vertical-align:middle}
+.items-table tr{cursor:pointer}
+.items-table tr:hover td{background:var(--amber-glow)}
+.items-table tr.expanded td{background:rgba(245,166,35,0.05);border-bottom-color:transparent}
+.iname{font-family:'Oswald',sans-serif;font-size:0.82rem;color:var(--text-bright);letter-spacing:1px;text-transform:uppercase}
+.pr-val{font-family:'VT323',monospace;font-size:1.3rem;line-height:1;color:var(--red)}
+.er-val{font-family:'VT323',monospace;font-size:1.3rem;line-height:1;color:var(--blue)}
+.rr-val{font-family:'VT323',monospace;font-size:1.3rem;line-height:1;color:var(--green)}
+.hp-val{font-family:'VT323',monospace;font-size:1.3rem;line-height:1;color:var(--amber)}
+.loc-badge{display:inline-block;font-size:0.6rem;padding:0.1rem 0.3rem;border:1px solid;font-family:'Oswald',sans-serif;letter-spacing:1px;text-transform:uppercase}
+.loc-Head{color:var(--amber);border-color:rgba(245,166,35,0.4);background:rgba(245,166,35,0.06)}
+.loc-Arms{color:var(--teal);border-color:rgba(26,188,156,0.4);background:rgba(26,188,156,0.06)}
+.loc-Legs{color:var(--green);border-color:rgba(57,255,20,0.4);background:rgba(57,255,20,0.06)}
+.loc-Torso{color:var(--purple);border-color:rgba(155,89,182,0.4);background:rgba(155,89,182,0.06)}
+.quality-tag{display:inline-block;font-size:0.57rem;padding:0.05rem 0.28rem;border:1px solid rgba(245,166,35,0.25);color:var(--text-dim);background:rgba(245,166,35,0.04);margin:0.1rem 0.1rem 0.1rem 0;white-space:nowrap;font-family:'Oswald',sans-serif;letter-spacing:1px;text-transform:uppercase}
+.quality-tag.notable{border-color:rgba(245,166,35,0.5);color:var(--amber)}
+.quality-tag.shadowed{border-color:var(--purple);color:var(--purple);background:var(--purple-pale)}
+.rarity{display:flex;gap:2px;align-items:center}
+.rarity-pip{width:7px;height:7px;border-radius:1px;border:1px solid rgba(245,166,35,0.25);background:transparent}
+.rarity-pip.filled{background:var(--amber);border-color:var(--amber)}
+.cost-val{font-family:'Oswald',sans-serif;font-size:0.82rem;color:var(--amber);letter-spacing:1px}
+
+/* EXPANDED */
+.detail-row td{padding:0!important;border-top:none!important;background:var(--panel3)!important}
+.detail-inner{padding:1rem 1.2rem 1.2rem;border:1px solid rgba(245,166,35,0.15);border-top:2px solid var(--amber);display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+@media(max-width:700px){.detail-inner{grid-template-columns:1fr}}
+.d-title{font-family:'Oswald',sans-serif;font-size:0.6rem;letter-spacing:4px;color:var(--amber);opacity:0.65;text-transform:uppercase;border-bottom:1px solid rgba(245,166,35,0.1);padding-bottom:0.3rem;margin-bottom:0.6rem}
+.d-row{display:flex;justify-content:space-between;font-size:0.75rem;padding:0.2rem 0;border-bottom:1px solid rgba(245,166,35,0.05)}
+.d-row .key{color:var(--text-dim)}
+.d-row .val{color:var(--text-bright);font-family:'Oswald',sans-serif;letter-spacing:1px;font-size:0.78rem}
+.d-qualities{display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.5rem}
+.d-effects{font-size:0.76rem;color:var(--text);line-height:1.65;margin-top:0.4rem}
+.d-rules{font-size:0.73rem;color:var(--text-dim);line-height:1.65;margin-top:0.5rem}
+.d-rules strong{color:var(--amber)}
+
+/* CARDS */
+.items-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:0.7rem;margin-bottom:2rem}
+.item-card{background:var(--panel2);border:1px solid var(--border);padding:0.9rem 1rem;cursor:pointer;transition:all 0.15s;position:relative}
+.item-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:transparent;transition:background 0.15s}
+.item-card:hover{border-color:rgba(245,166,35,0.4)}
+.item-card:hover::before,.item-card.selected::before{background:var(--amber)}
+.item-card.selected{border-color:var(--amber)}
+.ic-name{font-family:'Oswald',sans-serif;font-size:0.88rem;color:var(--text-bright);letter-spacing:1px;text-transform:uppercase;margin-bottom:0.4rem;line-height:1.2}
+.ic-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.25rem;margin-bottom:0.5rem}
+.ic-stat{background:var(--panel3);text-align:center;padding:0.25rem;border:1px solid rgba(245,166,35,0.07)}
+.ic-stat-val{font-family:'VT323',monospace;font-size:1.2rem;line-height:1}
+.ic-stat-label{font-size:0.48rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase}
+.ic-tags{display:flex;flex-wrap:wrap;gap:0.2rem;margin-top:0.3rem}
+.ic-loc{font-size:0.6rem;color:var(--text-dim);margin-bottom:0.3rem}
+
+/* MISC */
+.no-results{text-align:center;padding:3rem 1rem;color:var(--text-dim);font-size:0.8rem;letter-spacing:2px}
+.no-results .big{font-family:'VT323',monospace;font-size:3rem;color:rgba(245,166,35,0.2);display:block;margin-bottom:0.5rem}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--darker)}
+::-webkit-scrollbar-thumb{background:var(--amber-dim)}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <svg class="hdr-pip" viewBox="0 0 38 38" fill="none">
+    <rect x="2" y="5" width="34" height="28" rx="3" stroke="#f5a623" stroke-width="1.8" fill="none"/>
+    <rect x="5" y="8" width="16" height="12" rx="1" fill="#060604" stroke="#39ff14" stroke-width="1.2"/>
+    <circle cx="13" cy="14" r="3" stroke="#39ff14" stroke-width="1.2" fill="none"/>
+    <circle cx="13" cy="14" r="1" fill="#39ff14"/>
+    <rect x="23" y="9" width="9" height="1.8" rx="0.9" fill="#f5a623"/>
+    <rect x="23" y="13" width="7" height="1.8" rx="0.9" fill="#f5a623" opacity="0.5"/>
+    <rect x="23" y="17" width="9" height="1.8" rx="0.9" fill="#f5a623"/>
+    <rect x="5" y="23" width="4" height="4" rx="2" fill="#39ff14"/>
+    <rect x="11" y="23" width="4" height="4" rx="2" fill="#39ff14" opacity="0.3"/>
+    <rect x="17" y="23" width="4" height="4" rx="2" fill="#39ff14" opacity="0.3"/>
+  </svg>
+  <div>
+    <div class="hdr-title">ARMOR VAULT</div>
+    <div class="hdr-sub">FALLOUT 2D20 // MODIPHIUS ENTERTAINMENT // PROTECTION DATABASE</div>
+  </div>
+  <div class="hdr-nav">
+    <a class="hdr-link" href="index.html">⌂ HOME</a>
+    <a class="hdr-link" href="rules.html">FIELD MANUAL</a>
+    <a class="hdr-link" href="fallout-char-creator.html">CHAR. CREATOR</a>
+    <a class="hdr-link" href="equipment.html">ARMORY</a>
+  </div>
+</div>
+
+<div id="cat-bar">
+  <button class="cat-tab active" onclick="showCat('all')">ALL <span class="cat-count" id="cnt-all">0</span></button>
+  <button class="cat-tab" onclick="showCat('clothing')">👕 CLOTHING <span class="cat-count" id="cnt-clothing">0</span></button>
+  <button class="cat-tab" onclick="showCat('outfit')">🧥 OUTFITS <span class="cat-count" id="cnt-outfit">0</span></button>
+  <button class="cat-tab" onclick="showCat('headgear')">⛑️ HEADGEAR <span class="cat-count" id="cnt-headgear">0</span></button>
+  <button class="cat-tab" onclick="showCat('raider')">⚙️ RAIDER <span class="cat-count" id="cnt-raider">0</span></button>
+  <button class="cat-tab" onclick="showCat('leather')">🛡️ LEATHER <span class="cat-count" id="cnt-leather">0</span></button>
+  <button class="cat-tab" onclick="showCat('metal')">⛓️ METAL <span class="cat-count" id="cnt-metal">0</span></button>
+  <button class="cat-tab" onclick="showCat('combat')">🎖️ COMBAT <span class="cat-count" id="cnt-combat">0</span></button>
+  <button class="cat-tab" onclick="showCat('synth')">🤖 SYNTH <span class="cat-count" id="cnt-synth">0</span></button>
+  <button class="cat-tab" onclick="showCat('power')">⚡ POWER ARMOR <span class="cat-count" id="cnt-power">0</span></button>
+  <button class="cat-tab" onclick="showCat('robot')">🔧 ROBOT <span class="cat-count" id="cnt-robot">0</span></button>
+  <button class="cat-tab" onclick="showCat('dog')">🐕 DOG <span class="cat-count" id="cnt-dog">0</span></button>
+</div>
+
+<div id="toolbar">
+  <input type="text" id="search-box" placeholder="⌕  Search armor…" oninput="filter()">
+  <select class="filter-select" id="f-loc" onchange="filter()">
+    <option value="">All Locations</option>
+    <option value="Head">Head</option>
+    <option value="Arms">Arms</option>
+    <option value="Legs">Legs</option>
+    <option value="Torso">Torso</option>
+    <option value="Full Body">Full Body</option>
+  </select>
+  <select class="filter-select" id="f-pr" onchange="filter()">
+    <option value="">Min Physical (PR)</option>
+    <option value="1">1+</option>
+    <option value="2">2+</option>
+    <option value="3">3+</option>
+    <option value="4">4+</option>
+    <option value="5">5+</option>
+    <option value="6">6+</option>
+    <option value="7">7+</option>
+    <option value="8">8+</option>
+    <option value="9">9+</option>
+    <option value="10">10+</option>
+  </select>
+  <select class="filter-select" id="f-rar" onchange="filter()">
+    <option value="">All Rarities</option>
+    <option value="0">Common (0)</option>
+    <option value="1">Uncommon (1)</option>
+    <option value="2">Rare (2)</option>
+    <option value="3">Very Rare (3)</option>
+    <option value="4">Exceptional (4)</option>
+    <option value="5">Legendary (5)</option>
+  </select>
+  <div class="view-toggle">
+    <button class="view-btn active" id="btn-tbl" onclick="setView('table')" title="Table">☰</button>
+    <button class="view-btn" id="btn-crd" onclick="setView('cards')" title="Cards">⊞</button>
+  </div>
+  <div class="result-count">SHOWING <span id="shown-count">0</span> ITEMS</div>
+</div>
+
+<div id="main">
+  <div id="sidebar">
+    <div class="sb-section">
+      <div class="sb-heading">Categories</div>
+      <div class="sb-link active" onclick="showCat('all')">All Armor <span class="sb-badge" id="sb-all">0</span></div>
+      <div class="sb-link" onclick="showCat('clothing')">Clothing <span class="sb-badge" id="sb-clothing">0</span></div>
+      <div class="sb-link" onclick="showCat('outfit')">Outfits <span class="sb-badge" id="sb-outfit">0</span></div>
+      <div class="sb-link" onclick="showCat('headgear')">Headgear <span class="sb-badge" id="sb-headgear">0</span></div>
+      <div class="sb-link" onclick="showCat('raider')">Raider Armor <span class="sb-badge" id="sb-raider">0</span></div>
+      <div class="sb-link" onclick="showCat('leather')">Leather Armor <span class="sb-badge" id="sb-leather">0</span></div>
+      <div class="sb-link" onclick="showCat('metal')">Metal Armor <span class="sb-badge" id="sb-metal">0</span></div>
+      <div class="sb-link" onclick="showCat('combat')">Combat Armor <span class="sb-badge" id="sb-combat">0</span></div>
+      <div class="sb-link" onclick="showCat('synth')">Synth Armor <span class="sb-badge" id="sb-synth">0</span></div>
+      <div class="sb-link" onclick="showCat('power')">Power Armor <span class="sb-badge" id="sb-power">0</span></div>
+      <div class="sb-link" onclick="showCat('robot')">Robot Armor <span class="sb-badge" id="sb-robot">0</span></div>
+      <div class="sb-link" onclick="showCat('dog')">Dog Armor <span class="sb-badge" id="sb-dog">0</span></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-heading">Legend</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--red)"></div>Physical Resistance (PR)</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--blue)"></div>Energy Resistance (ER)</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--green)"></div>Radiation Resistance (RR)</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--amber)"></div>Health Points (Power Armor)</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--amber)"></div>Lightweight</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--purple)"></div>Shadowed</div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-heading">Armor Stacking</div>
+      <div style="padding:0.6rem 1rem;font-size:0.67rem;color:var(--text-dim);line-height:1.7">
+        <div style="margin-bottom:0.4rem"><span style="color:var(--amber)">Clothing + Armor:</span> Use highest DR per location. Cannot combine outfits with armor.</div>
+        <div style="margin-bottom:0.4rem"><span style="color:var(--amber)">Piecemeal:</span> Mix and match pieces—each covers one location (arm, leg, torso).</div>
+        <div style="margin-bottom:0.4rem"><span style="color:var(--amber)">Super Mutants:</span> Only Raider Armor fits.</div>
+        <div><span style="color:var(--amber)">Power Armor:</span> Requires frame. Each piece has HP; damage destroys pieces when HP reaches 0.</div>
+      </div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-heading">Notable Qualities</div>
+      <div style="padding:0.6rem 1rem;font-size:0.67rem;color:var(--text-dim);line-height:1.7">
+        <div><span style="color:var(--amber)">Lightweight:</span> Half weight for encumbrance</div>
+        <div><span style="color:var(--amber)">Noisy:</span> +1 Difficulty on Sneak</div>
+        <div><span style="color:var(--amber)">Sealed:</span> Immune to airborne hazards</div>
+        <div><span style="color:var(--amber)">Shadowed:</span> +1 Difficulty to detect wearer in shadows</div>
+        <div><span style="color:var(--amber)">Ballistic Weave:</span> Clothing can be upgraded for DR</div>
+        <div><span style="color:var(--amber)">Powered:</span> Requires fusion core to operate</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="content"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// ARMOR DATA
+// ═══════════════════════════════════════════════
+
+const ARMOR = [
+  // CLOTHING
+  { id:'bos_uniform', cat:'clothing', name:'BoS Uniform', pr:1, er:1, rr:1, loc:'Arms, Legs, Torso', weight:2, cost:20, rarity:2, qualities:['Uniform'], modSlots:['Ballistic Weave'] },
+  { id:'casual_clothing', cat:'clothing', name:'Casual Clothing', pr:0, er:0, rr:0, loc:'Arms, Legs, Torso', weight:2, cost:20, rarity:1, qualities:[], modSlots:['Ballistic Weave'] },
+  { id:'harness', cat:'clothing', name:'Harness', pr:0, er:0, rr:0, loc:'Arms, Legs, Torso', weight:1, cost:5, rarity:0, qualities:[], modSlots:['Ballistic Weave'] },
+  { id:'military_fatigues', cat:'clothing', name:'Military Fatigues', pr:0, er:1, rr:0, loc:'Arms, Legs, Torso', weight:3, cost:12, rarity:1, qualities:['Military'], modSlots:['Ballistic Weave'] },
+  { id:'road_leathers', cat:'clothing', name:'Road Leathers', pr:1, er:1, rr:0, loc:'Arms, Legs, Torso', weight:1, cost:5, rarity:1, qualities:['Lightweight'], modSlots:['Ballistic Weave'] },
+  { id:'tough_clothing', cat:'clothing', name:'Tough Clothing', pr:1, er:1, rr:0, loc:'Arms, Legs, Torso', weight:3, cost:20, rarity:1, qualities:[], modSlots:['Ballistic Weave'] },
+  { id:'vault_jumpsuit', cat:'clothing', name:'Vault Jumpsuit', pr:0, er:1, rr:2, loc:'Arms, Legs, Torso', weight:1, cost:20, rarity:2, qualities:['Vault-Tec'], modSlots:['Insulated Lining','Treated Lining','Resistant Lining','Protective Lining','Shielded Lining'] },
+
+  // OUTFITS
+  { id:'bos_fatigues', cat:'outfit', name:'BoS Fatigues', pr:2, er:2, rr:2, loc:'Arms, Legs, Torso', weight:4, cost:20, rarity:3, qualities:['Military','Sealed'], modSlots:[] },
+  { id:'scribe_armor', cat:'outfit', name:'Scribe\'s Armor', pr:1, er:2, rr:2, loc:'Arms, Legs, Torso', weight:4, cost:20, rarity:2, qualities:['Scholar'], modSlots:[] },
+  { id:'cage_armor', cat:'outfit', name:'Cage Armor', pr:3, er:4, rr:0, loc:'Head, Arms, Legs, Torso', weight:33, cost:110, rarity:3, qualities:['Noisy','Heavy'], modSlots:[] },
+  { id:'drifter_outfit', cat:'outfit', name:'Drifter Outfit', pr:1, er:2, rr:0, loc:'Arms, Legs, Torso', weight:10, cost:35, rarity:1, qualities:['Worn'], modSlots:[] },
+  { id:'engineer_armor', cat:'outfit', name:'Engineer\'s Armor', pr:1, er:1, rr:0, loc:'Arms, Legs, Torso', weight:2, cost:15, rarity:1, qualities:['Tool Pockets'], modSlots:[] },
+  { id:'formal_clothing', cat:'outfit', name:'Formal Clothing', pr:0, er:0, rr:0, loc:'Arms, Legs, Torso', weight:2, cost:30, rarity:2, qualities:['Elegant'], modSlots:[] },
+  { id:'hazmat_suit', cat:'outfit', name:'Hazmat Suit', pr:0, er:0, rr:'Immune', loc:'Head, Arms, Legs, Torso', weight:5, cost:85, rarity:3, qualities:['Sealed','Bulky'], modSlots:[] },
+  { id:'heavy_coat', cat:'outfit', name:'Heavy Coat', pr:1, er:1, rr:1, loc:'Arms, Legs, Torso', weight:2, cost:20, rarity:1, qualities:['Warm'], modSlots:[] },
+  { id:'hides', cat:'outfit', name:'Hides', pr:1, er:0, rr:0, loc:'Arms, Legs, Torso', weight:4, cost:13, rarity:0, qualities:['Primitive'], modSlots:[] },
+  { id:'lab_coat', cat:'outfit', name:'Lab Coat', pr:0, er:0, rr:0, loc:'Arms, Legs, Torso', weight:2, cost:10, rarity:1, qualities:['Pockets'], modSlots:['Ballistic Weave'] },
+  { id:'spike_armor', cat:'outfit', name:'Spike Armor', pr:2, er:2, rr:0, loc:'Head, Arms, Legs, Torso', weight:17, cost:65, rarity:2, qualities:['Intimidating','Spiked'], modSlots:[] },
+  { id:'utility_coveralls', cat:'outfit', name:'Utility Coveralls', pr:2, er:0, rr:0, loc:'Arms, Legs, Torso', weight:2, cost:12, rarity:1, qualities:['Sturdy'], modSlots:['Ballistic Weave'] },
+
+  // HEADGEAR
+  { id:'army_helmet', cat:'headgear', name:'Army Helmet', pr:2, er:0, rr:0, loc:'Head', weight:3, cost:20, rarity:1, qualities:['Military'], modSlots:[] },
+  { id:'bos_hood', cat:'headgear', name:'BoS Hood', pr:0, er:1, rr:0, loc:'Head', weight:0.5, cost:12, rarity:2, qualities:['Cloth'], modSlots:['Ballistic Weave'] },
+  { id:'scribe_hat', cat:'headgear', name:'Scribe\'s Hat', pr:0, er:2, rr:0, loc:'Head', weight:0.5, cost:8, rarity:2, qualities:['Scholar'], modSlots:['Ballistic Weave'] },
+  { id:'casual_hat', cat:'headgear', name:'Casual Hat', pr:0, er:0, rr:0, loc:'Head', weight:0.5, cost:15, rarity:1, qualities:['Stylish'], modSlots:['Ballistic Weave'] },
+  { id:'formal_hat', cat:'headgear', name:'Formal Hat', pr:0, er:0, rr:0, loc:'Head', weight:0.5, cost:15, rarity:2, qualities:['Elegant'], modSlots:['Ballistic Weave'] },
+  { id:'gas_mask', cat:'headgear', name:'Gas Mask', pr:1, er:0, rr:3, loc:'Head', weight:3, cost:10, rarity:2, qualities:['Sealed','Respirator'], modSlots:[] },
+  { id:'hard_hat', cat:'headgear', name:'Hard Hat', pr:2, er:0, rr:0, loc:'Head', weight:0.5, cost:15, rarity:1, qualities:['Industrial'], modSlots:[] },
+  { id:'hood', cat:'headgear', name:'Hood', pr:1, er:0, rr:1, loc:'Head', weight:2, cost:5, rarity:1, qualities:['Concealing'], modSlots:['Ballistic Weave'] },
+  { id:'sack_hood', cat:'headgear', name:'Sack Hood', pr:0, er:0, rr:2, loc:'Head', weight:1, cost:5, rarity:0, qualities:['Crude'], modSlots:[] },
+  { id:'welders_visor', cat:'headgear', name:'Welder\'s Visor', pr:2, er:2, rr:0, loc:'Head', weight:4, cost:20, rarity:2, qualities:['Industrial','Flash Protection'], modSlots:[] },
+
+  // RAIDER ARMOR
+  { id:'raider_chest', cat:'raider', name:'Raider Chest', pr:1, er:1, rr:0, loc:'Torso', weight:7, cost:18, rarity:0, qualities:['Makeshift'], modSlots:['Welded','Tempered','Hardened','Buttressed'] },
+  { id:'raider_leg', cat:'raider', name:'Raider Leg', pr:1, er:1, rr:0, loc:'Legs', weight:3, cost:8, rarity:0, qualities:['Makeshift'], modSlots:['Welded','Tempered','Hardened','Buttressed'] },
+  { id:'raider_arm', cat:'raider', name:'Raider Arm', pr:1, er:1, rr:0, loc:'Arms', weight:3, cost:6, rarity:0, qualities:['Makeshift'], modSlots:['Welded','Tempered','Hardened','Buttressed'] },
+  { id:'sturdy_raider_chest', cat:'raider', name:'Sturdy Raider Chest', pr:2, er:2, rr:0, loc:'Torso', weight:12, cost:33, rarity:1, qualities:['Makeshift','Reinforced'], modSlots:['Welded','Tempered','Hardened','Buttressed'] },
+  { id:'sturdy_raider_leg', cat:'raider', name:'Sturdy Raider Leg', pr:2, er:2, rr:0, loc:'Legs', weight:7, cost:13, rarity:1, qualities:['Makeshift','Reinforced'], modSlots:['Welded','Tempered','Hardened','Buttressed'] },
+  { id:'sturdy_raider_arm', cat:'raider', name:'Sturdy Raider Arm', pr:2, er:2, rr:0, loc:'Arms', weight:7, cost:8, rarity:1, qualities:['Makeshift','Reinforced'], modSlots:['Welded','Tempered','Hardened','Buttressed'] },
+  { id:'heavy_raider_chest', cat:'raider', name:'Heavy Raider Chest', pr:3, er:3, rr:0, loc:'Torso', weight:17, cost:48, rarity:2, qualities:['Makeshift','Bulky'], modSlots:['Welded','Tempered','Hardened','Buttressed'] },
+  { id:'heavy_raider_leg', cat:'raider', name:'Heavy Raider Leg', pr:3, er:3, rr:0, loc:'Legs', weight:10, cost:18, rarity:2, qualities:['Makeshift','Bulky'], modSlots:['Welded','Tempered','Hardened','Buttressed'] },
+  { id:'heavy_raider_arm', cat:'raider', name:'Heavy Raider Arm', pr:3, er:3, rr:0, loc:'Arms', weight:10, cost:15, rarity:2, qualities:['Makeshift','Bulky'], modSlots:['Welded','Tempered','Hardened','Buttressed'] },
+
+  // LEATHER ARMOR
+  { id:'leather_chest', cat:'leather', name:'Leather Chest', pr:1, er:2, rr:0, loc:'Torso', weight:5, cost:25, rarity:1, qualities:[], modSlots:['Boiled','Girded','Treated','Shadowed','Studded'] },
+  { id:'leather_leg', cat:'leather', name:'Leather Leg', pr:1, er:2, rr:0, loc:'Legs', weight:2, cost:10, rarity:1, qualities:[], modSlots:['Boiled','Girded','Treated','Shadowed','Studded'] },
+  { id:'leather_arm', cat:'leather', name:'Leather Arm', pr:1, er:2, rr:0, loc:'Arms', weight:2, cost:8, rarity:1, qualities:[], modSlots:['Boiled','Girded','Treated','Shadowed','Studded'] },
+  { id:'sturdy_leather_chest', cat:'leather', name:'Sturdy Leather Chest', pr:2, er:3, rr:0, loc:'Torso', weight:10, cost:50, rarity:2, qualities:['Reinforced'], modSlots:['Boiled','Girded','Treated','Shadowed','Studded'] },
+  { id:'sturdy_leather_leg', cat:'leather', name:'Sturdy Leather Leg', pr:2, er:3, rr:0, loc:'Legs', weight:5, cost:20, rarity:2, qualities:['Reinforced'], modSlots:['Boiled','Girded','Treated','Shadowed','Studded'] },
+  { id:'sturdy_leather_arm', cat:'leather', name:'Sturdy Leather Arm', pr:2, er:3, rr:0, loc:'Arms', weight:5, cost:18, rarity:2, qualities:['Reinforced'], modSlots:['Boiled','Girded','Treated','Shadowed','Studded'] },
+  { id:'heavy_leather_chest', cat:'leather', name:'Heavy Leather Chest', pr:3, er:4, rr:0, loc:'Torso', weight:15, cost:75, rarity:3, qualities:['Bulky'], modSlots:['Boiled','Girded','Treated','Shadowed','Studded'] },
+  { id:'heavy_leather_leg', cat:'leather', name:'Heavy Leather Leg', pr:3, er:4, rr:0, loc:'Legs', weight:7, cost:30, rarity:3, qualities:['Bulky'], modSlots:['Boiled','Girded','Treated','Shadowed','Studded'] },
+  { id:'heavy_leather_arm', cat:'leather', name:'Heavy Leather Arm', pr:3, er:4, rr:0, loc:'Arms', weight:7, cost:28, rarity:3, qualities:['Bulky'], modSlots:['Boiled','Girded','Treated','Shadowed','Studded'] },
+
+  // METAL ARMOR
+  { id:'metal_helmet', cat:'metal', name:'Metal Helmet', pr:2, er:1, rr:0, loc:'Head', weight:3, cost:15, rarity:1, qualities:['Noisy'], modSlots:['Painted','Enameled','Shadowed','Alloyed','Polished'] },
+  { id:'metal_chest', cat:'metal', name:'Metal Chest', pr:2, er:1, rr:0, loc:'Torso', weight:6, cost:40, rarity:1, qualities:['Noisy'], modSlots:['Painted','Enameled','Shadowed','Alloyed','Polished'] },
+  { id:'metal_leg', cat:'metal', name:'Metal Leg', pr:2, er:1, rr:0, loc:'Legs', weight:3, cost:15, rarity:1, qualities:['Noisy'], modSlots:['Painted','Enameled','Shadowed','Alloyed','Polished'] },
+  { id:'metal_arm', cat:'metal', name:'Metal Arm', pr:2, er:1, rr:0, loc:'Arms', weight:3, cost:15, rarity:1, qualities:['Noisy'], modSlots:['Painted','Enameled','Shadowed','Alloyed','Polished'] },
+  { id:'sturdy_metal_helmet', cat:'metal', name:'Sturdy Metal Helmet', pr:3, er:2, rr:0, loc:'Head', weight:8, cost:65, rarity:2, qualities:['Noisy'], modSlots:['Painted','Enameled','Shadowed','Alloyed','Polished'] },
+  { id:'sturdy_metal_chest', cat:'metal', name:'Sturdy Metal Chest', pr:3, er:2, rr:0, loc:'Torso', weight:16, cost:115, rarity:2, qualities:['Noisy'], modSlots:['Painted','Enameled','Shadowed','Alloyed','Polished'] },
+  { id:'sturdy_metal_leg', cat:'metal', name:'Sturdy Metal Leg', pr:3, er:2, rr:0, loc:'Legs', weight:8, cost:65, rarity:2, qualities:['Noisy'], modSlots:['Painted','Enameled','Shadowed','Alloyed','Polished'] },
+  { id:'sturdy_metal_arm', cat:'metal', name:'Sturdy Metal Arm', pr:3, er:2, rr:0, loc:'Arms', weight:8, cost:65, rarity:2, qualities:['Noisy'], modSlots:['Painted','Enameled','Shadowed','Alloyed','Polished'] },
+  { id:'heavy_metal_helmet', cat:'metal', name:'Heavy Metal Helmet', pr:4, er:3, rr:0, loc:'Head', weight:12, cost:115, rarity:3, qualities:['Noisy','Bulky'], modSlots:['Painted','Enameled','Shadowed','Alloyed','Polished'] },
+  { id:'heavy_metal_chest', cat:'metal', name:'Heavy Metal Chest', pr:4, er:3, rr:0, loc:'Torso', weight:23, cost:190, rarity:3, qualities:['Noisy','Bulky'], modSlots:['Painted','Enameled','Shadowed','Alloyed','Polished'] },
+  { id:'heavy_metal_leg', cat:'metal', name:'Heavy Metal Leg', pr:4, er:3, rr:0, loc:'Legs', weight:12, cost:115, rarity:3, qualities:['Noisy','Bulky'], modSlots:['Painted','Enameled','Shadowed','Alloyed','Polished'] },
+  { id:'heavy_metal_arm', cat:'metal', name:'Heavy Metal Arm', pr:4, er:3, rr:0, loc:'Arms', weight:12, cost:115, rarity:3, qualities:['Noisy','Bulky'], modSlots:['Painted','Enameled','Shadowed','Alloyed','Polished'] },
+
+  // COMBAT ARMOR
+  { id:'combat_helmet', cat:'combat', name:'Combat Helmet', pr:2, er:2, rr:0, loc:'Head', weight:4, cost:25, rarity:2, qualities:['Military'], modSlots:['Reinforced','Shadowed','Fiberglass','Polymer'] },
+  { id:'combat_chest', cat:'combat', name:'Combat Chest', pr:2, er:2, rr:0, loc:'Torso', weight:8, cost:60, rarity:2, qualities:['Military'], modSlots:['Reinforced','Shadowed','Fiberglass','Polymer'] },
+  { id:'combat_leg', cat:'combat', name:'Combat Leg', pr:2, er:2, rr:0, loc:'Legs', weight:2, cost:25, rarity:2, qualities:['Military'], modSlots:['Reinforced','Shadowed','Fiberglass','Polymer'] },
+  { id:'combat_arm', cat:'combat', name:'Combat Arm', pr:2, er:2, rr:0, loc:'Arms', weight:2, cost:25, rarity:2, qualities:['Military'], modSlots:['Reinforced','Shadowed','Fiberglass','Polymer'] },
+  { id:'sturdy_combat_helmet', cat:'combat', name:'Sturdy Combat Helmet', pr:3, er:3, rr:0, loc:'Head', weight:5, cost:105, rarity:3, qualities:['Military','Reinforced'], modSlots:['Reinforced','Shadowed','Fiberglass','Polymer'] },
+  { id:'sturdy_combat_chest', cat:'combat', name:'Sturdy Combat Chest', pr:3, er:3, rr:0, loc:'Torso', weight:12, cost:140, rarity:3, qualities:['Military','Reinforced'], modSlots:['Reinforced','Shadowed','Fiberglass','Polymer'] },
+  { id:'sturdy_combat_leg', cat:'combat', name:'Sturdy Combat Leg', pr:3, er:3, rr:0, loc:'Legs', weight:5, cost:105, rarity:3, qualities:['Military','Reinforced'], modSlots:['Reinforced','Shadowed','Fiberglass','Polymer'] },
+  { id:'sturdy_combat_arm', cat:'combat', name:'Sturdy Combat Arm', pr:3, er:3, rr:0, loc:'Arms', weight:5, cost:105, rarity:3, qualities:['Military','Reinforced'], modSlots:['Reinforced','Shadowed','Fiberglass','Polymer'] },
+  { id:'heavy_combat_helmet', cat:'combat', name:'Heavy Combat Helmet', pr:4, er:4, rr:0, loc:'Head', weight:7, cost:185, rarity:4, qualities:['Military','Bulky'], modSlots:['Reinforced','Shadowed','Fiberglass','Polymer'] },
+  { id:'heavy_combat_chest', cat:'combat', name:'Heavy Combat Chest', pr:4, er:4, rr:0, loc:'Torso', weight:16, cost:220, rarity:4, qualities:['Military','Bulky'], modSlots:['Reinforced','Shadowed','Fiberglass','Polymer'] },
+  { id:'heavy_combat_leg', cat:'combat', name:'Heavy Combat Leg', pr:4, er:4, rr:0, loc:'Legs', weight:7, cost:185, rarity:4, qualities:['Military','Bulky'], modSlots:['Reinforced','Shadowed','Fiberglass','Polymer'] },
+  { id:'heavy_combat_arm', cat:'combat', name:'Heavy Combat Arm', pr:4, er:4, rr:0, loc:'Arms', weight:7, cost:145, rarity:4, qualities:['Military','Bulky'], modSlots:['Reinforced','Shadowed','Fiberglass','Polymer'] },
+
+  // SYNTH ARMOR
+  { id:'synth_helmet', cat:'synth', name:'Synth Helmet', pr:2, er:3, rr:0, loc:'Head', weight:3, cost:33, rarity:3, qualities:['Advanced'], modSlots:['Laminated','Resin','Microcarbon','Nanofilament'] },
+  { id:'synth_chest', cat:'synth', name:'Synth Chest', pr:2, er:3, rr:0, loc:'Torso', weight:7, cost:75, rarity:3, qualities:['Advanced'], modSlots:['Laminated','Resin','Microcarbon','Nanofilament'] },
+  { id:'synth_leg', cat:'synth', name:'Synth Leg', pr:2, er:3, rr:0, loc:'Legs', weight:3, cost:30, rarity:3, qualities:['Advanced'], modSlots:['Laminated','Resin','Microcarbon','Nanofilament'] },
+  { id:'synth_arm', cat:'synth', name:'Synth Arm', pr:2, er:3, rr:0, loc:'Arms', weight:3, cost:30, rarity:4, qualities:['Advanced'], modSlots:['Laminated','Resin','Microcarbon','Nanofilament'] },
+  { id:'sturdy_synth_helmet', cat:'synth', name:'Sturdy Synth Helmet', pr:3, er:4, rr:0, loc:'Head', weight:7, cost:70, rarity:4, qualities:['Advanced','Reinforced'], modSlots:['Laminated','Resin','Microcarbon','Nanofilament'] },
+  { id:'sturdy_synth_chest', cat:'synth', name:'Sturdy Synth Chest', pr:3, er:4, rr:0, loc:'Torso', weight:12, cost:125, rarity:4, qualities:['Advanced','Reinforced'], modSlots:['Laminated','Resin','Microcarbon','Nanofilament'] },
+  { id:'sturdy_synth_leg', cat:'synth', name:'Sturdy Synth Leg', pr:3, er:4, rr:0, loc:'Legs', weight:7, cost:80, rarity:4, qualities:['Advanced','Reinforced'], modSlots:['Laminated','Resin','Microcarbon','Nanofilament'] },
+  { id:'sturdy_synth_arm', cat:'synth', name:'Sturdy Synth Arm', pr:3, er:4, rr:0, loc:'Arms', weight:7, cost:70, rarity:4, qualities:['Advanced','Reinforced'], modSlots:['Laminated','Resin','Microcarbon','Nanofilament'] },
+  { id:'heavy_synth_helmet', cat:'synth', name:'Heavy Synth Helmet', pr:4, er:5, rr:0, loc:'Head', weight:10, cost:110, rarity:5, qualities:['Advanced','Bulky'], modSlots:['Laminated','Resin','Microcarbon','Nanofilament'] },
+  { id:'heavy_synth_chest', cat:'synth', name:'Heavy Synth Chest', pr:4, er:5, rr:0, loc:'Torso', weight:17, cost:175, rarity:5, qualities:['Advanced','Bulky'], modSlots:['Laminated','Resin','Microcarbon','Nanofilament'] },
+  { id:'heavy_synth_leg', cat:'synth', name:'Heavy Synth Leg', pr:4, er:5, rr:0, loc:'Legs', weight:10, cost:130, rarity:5, qualities:['Advanced','Bulky'], modSlots:['Laminated','Resin','Microcarbon','Nanofilament'] },
+  { id:'heavy_synth_arm', cat:'synth', name:'Heavy Synth Arm', pr:4, er:5, rr:0, loc:'Arms', weight:10, cost:110, rarity:5, qualities:['Advanced','Bulky'], modSlots:['Laminated','Resin','Microcarbon','Nanofilament'] },
+
+  // VAULT-TEC SECURITY
+  { id:'vault_security_helmet', cat:'headgear', name:'Vault-Tec Security Helmet', pr:2, er:0, rr:0, loc:'Head', weight:2, cost:20, rarity:1, qualities:['Vault-Tec'], modSlots:[] },
+  { id:'vault_security_armor', cat:'outfit', name:'Vault-Tec Security Armor', pr:2, er:0, rr:2, loc:'Arms, Legs, Torso', weight:8, cost:16, rarity:1, qualities:['Vault-Tec','Sturdy'], modSlots:[] },
+
+  // POWER ARMOR
+  { id:'power_frame', cat:'power', name:'Armor Frame', pr:0, er:0, rr:0, hp:0, loc:'All', weight:150, cost:4500, rarity:4, qualities:['Powered','Frame'], modSlots:[] },
+  
+  // Raider Power Armor
+  { id:'raider_power_helm', cat:'power', name:'Raider Power Helm', pr:6, er:4, rr:7, hp:7, loc:'Head', weight:14, cost:50, rarity:2, qualities:['Powered','Raider'], modSlots:['Raider II Helm'] },
+  { id:'raider_power_chest', cat:'power', name:'Raider Power Chest', pr:8, er:6, rr:9, hp:10, loc:'Torso', weight:22, cost:100, rarity:2, qualities:['Powered','Raider'], modSlots:['Raider II Chest Piece','Welded Rebar'] },
+  { id:'raider_power_arm', cat:'power', name:'Raider Power Arm', pr:4, er:3, rr:7, hp:7, loc:'Arms', weight:16, cost:75, rarity:2, qualities:['Powered','Raider'], modSlots:['Raider II Arm'] },
+  { id:'raider_power_leg', cat:'power', name:'Raider Power Leg', pr:4, er:3, rr:7, hp:7, loc:'Legs', weight:17, cost:75, rarity:2, qualities:['Powered','Raider'], modSlots:['Raider II Leg'] },
+
+  // T-45 Power Armor
+  { id:'t45_helm', cat:'power', name:'T-45 Helm', pr:6, er:4, rr:7, hp:7, loc:'Head', weight:12, cost:60, rarity:2, qualities:['Powered','T-45'], modSlots:['T-45b Helm','T-45c Helm','T-45d Helm','T-45e Helm','T-45f Helm'] },
+  { id:'t45_chest', cat:'power', name:'T-45 Chest', pr:8, er:7, rr:9, hp:14, loc:'Torso', weight:20, cost:140, rarity:2, qualities:['Powered','T-45'], modSlots:['T-45b Chest Piece','T-45c Chest Piece','T-45d Chest Piece','T-45e Chest Piece','T-45f Chest Piece'] },
+  { id:'t45_arm', cat:'power', name:'T-45 Arm', pr:4, er:3, rr:7, hp:7, loc:'Arms', weight:15, cost:100, rarity:2, qualities:['Powered','T-45'], modSlots:['T-45b Arm','T-45c Arm','T-45d Arm','T-45e Arm','T-45f Arm'] },
+  { id:'t45_leg', cat:'power', name:'T-45 Leg', pr:4, er:3, rr:7, hp:7, loc:'Legs', weight:15, cost:100, rarity:2, qualities:['Powered','T-45'], modSlots:['T-45b Leg','T-45c Leg','T-45d Leg','T-45e Leg','T-45f Leg'] },
+
+  // T-51 Power Armor
+  { id:'t51_helm', cat:'power', name:'T-51 Helm', pr:6, er:5, rr:7, hp:9, loc:'Head', weight:12, cost:80, rarity:3, qualities:['Powered','T-51'], modSlots:['T-51b Helm','T-51c Helm','T-51d Helm','T-51e Helm','T-51f Helm'] },
+  { id:'t51_chest', cat:'power', name:'T-51 Chest', pr:8, er:7, rr:9, hp:18, loc:'Torso', weight:20, cost:180, rarity:3, qualities:['Powered','T-51'], modSlots:['T-51b Chest Piece','T-51c Chest Piece','T-51d Chest Piece','T-51e Chest Piece','T-51f Chest Piece'] },
+  { id:'t51_arm', cat:'power', name:'T-51 Arm', pr:5, er:4, rr:7, hp:9, loc:'Arms', weight:15, cost:130, rarity:3, qualities:['Powered','T-51'], modSlots:['T-51b Arm','T-51c Arm','T-51d Arm','T-51e Arm','T-51f Arm'] },
+  { id:'t51_leg', cat:'power', name:'T-51 Leg', pr:5, er:4, rr:7, hp:9, loc:'Legs', weight:15, cost:130, rarity:3, qualities:['Powered','T-51'], modSlots:['T-51b Leg','T-51c Leg','T-51d Leg','T-51e Leg','T-51f Leg'] },
+
+  // T-60 Power Armor
+  { id:'t60_helm', cat:'power', name:'T-60 Helm', pr:7, er:6, rr:7, hp:10, loc:'Head', weight:12, cost:650, rarity:4, qualities:['Powered','T-60'], modSlots:['T-60b Helm','T-60c Helm','T-60d Helm','T-60e Helm','T-60f Helm'] },
+  { id:'t60_chest', cat:'power', name:'T-60 Chest', pr:9, er:8, rr:9, hp:21, loc:'Torso', weight:20, cost:750, rarity:4, qualities:['Powered','T-60'], modSlots:['T-60b Chest Piece','T-60c Chest Piece','T-60d Chest Piece','T-60e Chest Piece','T-60f Chest Piece'] },
+  { id:'t60_arm', cat:'power', name:'T-60 Arm', pr:6, er:5, rr:7, hp:10, loc:'Arms', weight:15, cost:700, rarity:4, qualities:['Powered','T-60'], modSlots:['T-60b Arm','T-60c Arm','T-60d Arm','T-60e Arm','T-60f Arm'] },
+  { id:'t60_leg', cat:'power', name:'T-60 Leg', pr:6, er:5, rr:7, hp:10, loc:'Legs', weight:15, cost:700, rarity:4, qualities:['Powered','T-60'], modSlots:['T-60b Leg','T-60c Leg','T-60d Leg','T-60e Leg','T-60f Leg'] },
+
+  // X-01 Power Armor
+  { id:'x01_helm', cat:'power', name:'X-01 Helm', pr:8, er:7, rr:7, hp:12, loc:'Head', weight:12, cost:60, rarity:5, qualities:['Powered','X-01','Advanced'], modSlots:['Mk II Helm','Mk III Helm','Mk IV Helm','Mk V Helm','Mk VI Helm'] },
+  { id:'x01_chest', cat:'power', name:'X-01 Chest', pr:10, er:8, rr:9, hp:24, loc:'Torso', weight:20, cost:140, rarity:5, qualities:['Powered','X-01','Advanced'], modSlots:['Mk II Chest Piece','Mk III Chest Piece','Mk IV Chest Piece','Mk V Chest Piece','Mk VI Chest Piece','EMP Shielding'] },
+  { id:'x01_arm', cat:'power', name:'X-01 Arm', pr:7, er:6, rr:7, hp:12, loc:'Arms', weight:15, cost:100, rarity:5, qualities:['Powered','X-01','Advanced'], modSlots:['Mk II Arm','Mk III Arm','Mk IV Arm','Mk V Arm','Mk VI Arm'] },
+  { id:'x01_leg', cat:'power', name:'X-01 Leg', pr:7, er:6, rr:7, hp:12, loc:'Legs', weight:15, cost:100, rarity:5, qualities:['Powered','X-01','Advanced'], modSlots:['Mk II Leg','Mk III Leg','Mk IV Leg','Mk V Leg','Mk VI Leg'] },
+
+  // DOG ARMOR
+  { id:'dog_helmet', cat:'dog', name:'Dog Helmet', pr:2, er:1, rr:0, loc:'Head', weight:1, cost:7, rarity:2, qualities:['Canine'], modSlots:[] },
+  { id:'light_dog_armor', cat:'dog', name:'Light Dog Armor', pr:1, er:1, rr:0, loc:'Torso, Legs', weight:1, cost:10, rarity:1, qualities:['Canine','Lightweight'], modSlots:[] },
+  { id:'medium_dog_armor', cat:'dog', name:'Medium Dog Armor', pr:2, er:2, rr:0, loc:'Torso, Legs', weight:2, cost:15, rarity:2, qualities:['Canine'], modSlots:[] },
+  { id:'heavy_dog_armor', cat:'dog', name:'Heavy Dog Armor', pr:3, er:3, rr:0, loc:'Torso, Legs', weight:2, cost:20, rarity:3, qualities:['Canine','Bulky'], modSlots:[] },
+];
+
+// ARMOR MODS
+const ARMOR_MODS = {
+  ballistic: {
+    name: 'Ballistic Weave',
+    mods: [
+      { name:'Ballistic Weave', pr:2, er:2, rr:0, weight:0, cost:20, perks:'—' },
+      { name:'Ballistic Weave Mk II', pr:3, er:3, rr:0, weight:0, cost:30, perks:'Armorer 1' },
+      { name:'Ballistic Weave Mk III', pr:4, er:4, rr:0, weight:0, cost:40, perks:'Armorer 2' },
+      { name:'Ballistic Weave Mk IV', pr:5, er:5, rr:0, weight:0, cost:50, perks:'Armorer 3' },
+      { name:'Ballistic Weave Mk V', pr:6, er:6, rr:0, weight:0, cost:60, perks:'Armorer 4' },
+    ]
+  },
+  jumpsuit: {
+    name: 'Vault Jumpsuit Linings',
+    mods: [
+      { name:'Insulated Lining', pr:0, er:1, rr:0, weight:0, cost:10, perks:'—' },
+      { name:'Treated Lining', pr:0, er:1, rr:1, weight:1, cost:20, perks:'Armorer 2' },
+      { name:'Resistant Lining', pr:0, er:2, rr:1, weight:1, cost:30, perks:'Armorer 3' },
+      { name:'Protective Lining', pr:0, er:2, rr:2, weight:1, cost:40, perks:'Armorer 4, Science! 2' },
+      { name:'Shielded Lining', pr:0, er:3, rr:3, weight:1, cost:50, perks:'Armorer 4, Science! 4' },
+    ]
+  },
+  raider: {
+    name: 'Raider Material Mods',
+    mods: [
+      { name:'Welded', pr:1, er:1, rr:0, weight:1, cost:3, perks:'—' },
+      { name:'Tempered', pr:2, er:2, rr:0, weight:1, cost:6, perks:'—' },
+      { name:'Hardened', pr:3, er:3, rr:0, weight:2, cost:9, perks:'Armorer 1' },
+      { name:'Buttressed', pr:4, er:4, rr:0, weight:3, cost:12, perks:'Armorer 1' },
+    ]
+  },
+  leather: {
+    name: 'Leather Material Mods',
+    mods: [
+      { name:'Boiled Leather', pr:1, er:1, rr:0, weight:1, cost:5, perks:'—' },
+      { name:'Girded Leather', pr:2, er:2, rr:0, weight:1, cost:10, perks:'—' },
+      { name:'Treated Leather', pr:3, er:3, rr:0, weight:1, cost:15, perks:'Armorer 1' },
+      { name:'Shadowed Leather', pr:3, er:3, rr:0, weight:1, cost:20, perks:'Armorer 1', special:'Shadowed' },
+      { name:'Studded Leather', pr:4, er:4, rr:0, weight:2, cost:25, perks:'Armorer 1' },
+    ]
+  },
+  metal: {
+    name: 'Metal Material Mods',
+    mods: [
+      { name:'Painted Metal', pr:1, er:1, rr:0, weight:1, cost:10, perks:'—' },
+      { name:'Enameled Metal', pr:2, er:2, rr:0, weight:2, cost:20, perks:'Armorer 1' },
+      { name:'Shadowed Metal', pr:2, er:2, rr:0, weight:2, cost:25, perks:'Armorer 1', special:'Shadowed' },
+      { name:'Alloyed Metal', pr:3, er:3, rr:0, weight:3, cost:30, perks:'Armorer 1' },
+      { name:'Polished Metal', pr:4, er:4, rr:0, weight:4, cost:40, perks:'Armorer 2' },
+    ]
+  },
+  combat: {
+    name: 'Combat Material Mods',
+    mods: [
+      { name:'Reinforced', pr:1, er:1, rr:0, weight:1, cost:15, perks:'—' },
+      { name:'Shadowed', pr:1, er:1, rr:0, weight:1, cost:15, perks:'Armorer 1', special:'Shadowed' },
+      { name:'Fiberglass', pr:2, er:2, rr:0, weight:1, cost:30, perks:'Armorer 1' },
+      { name:'Polymer', pr:3, er:3, rr:0, weight:2, cost:45, perks:'Armorer 1' },
+    ]
+  },
+  synth: {
+    name: 'Synth Material Mods',
+    mods: [
+      { name:'Laminated', pr:1, er:1, rr:0, weight:1, cost:5, perks:'—' },
+      { name:'Resin', pr:2, er:2, rr:0, weight:1, cost:10, perks:'Armorer 1' },
+      { name:'Microcarbon', pr:3, er:3, rr:0, weight:2, cost:15, perks:'Armorer 1' },
+      { name:'Nanofilament', pr:4, er:4, rr:0, weight:3, cost:20, perks:'Armorer 1' },
+    ]
+  },
+  general: {
+    name: 'Universal Armor Upgrades (Repair)',
+    mods: [
+      { name:'Lighter Build', pr:0, er:0, rr:0, weight:-1, cost:1, perks:'—', loc:'All' },
+      { name:'Pocketed', pr:0, er:0, rr:0, weight:1, cost:1, perks:'Armorer 1', special:'+10 Carry Weight', loc:'All' },
+      { name:'Deep Pocketed', pr:0, er:0, rr:0, weight:2, cost:5, perks:'Armorer 1', special:'+20 Carry Weight', loc:'All' },
+      { name:'Lead Lined', pr:0, er:0, rr:3, weight:2, cost:5, perks:'Armorer 4, Science! 1', loc:'All' },
+      { name:'Ultra-Light Build', pr:0, er:0, rr:0, weight:-3, cost:7, perks:'Armorer 3', loc:'All' },
+      { name:'Padded', pr:0, er:0, rr:0, weight:4, cost:1, perks:'—', special:'+2 all DR vs Blast', loc:'Torso' },
+      { name:'Asbestos Lining', pr:0, er:3, rr:0, weight:4, cost:3, perks:'Armorer 1', special:'Ignore Persistent Energy', loc:'Torso' },
+      { name:'Dense', pr:0, er:0, rr:0, weight:4, cost:7, perks:'Armorer 3', special:'+4 all DR vs Blast', loc:'Torso' },
+      { name:'BioCommMesh', pr:0, er:0, rr:0, weight:2, cost:9, perks:'Armorer 4, Science! 2', special:'Chems last twice as long', loc:'Torso' },
+      { name:'Pneumatic', pr:0, er:0, rr:0, weight:2, cost:9, perks:'Armorer 4', special:'Stun requires 2+ Effects', loc:'Torso' },
+      { name:'Brawling', pr:0, er:0, rr:0, weight:1, cost:1, perks:'Armorer 1', special:'Unarmed +1 DC', loc:'Arms' },
+      { name:'Braced', pr:0, er:0, rr:0, weight:1, cost:1, perks:'Armorer 1', special:'+2 all DR vs melee', loc:'Arms' },
+      { name:'Stabilized', pr:0, er:0, rr:0, weight:1, cost:1, perks:'Armorer 2', special:'Aimed ranged attacks +1 DC', loc:'Arms' },
+      { name:'Aerodynamic', pr:0, er:0, rr:0, weight:0, cost:1, perks:'Armorer 3', special:'Spend 4 AP on melee damage', loc:'Arms' },
+      { name:'Weighted', pr:0, er:0, rr:0, weight:1, cost:3, perks:'Armorer 4', special:'Melee/Unarmed Piercing 1', loc:'Arms' },
+      { name:'Cushioned', pr:0, er:0, rr:0, weight:0, cost:1, perks:'Armorer 1', special:'+2 PR vs falling', loc:'Legs' },
+      { name:'Muffled', pr:0, er:0, rr:0, weight:0, cost:2, perks:'Armorer 2', special:'Re-roll 1d20 on Stealth', loc:'Legs' },
+    ]
+  },
+  power_raider: {
+    name: 'Raider Power Armor Upgrades',
+    mods: [
+      { name:'Raider II Helm', pr:1, er:0, rr:0, hp:3, weight:1, cost:5, perks:'Armorer 1', loc:'Head' },
+      { name:'Raider II Chest Piece', pr:1, er:0, rr:0, hp:4, weight:2, cost:10, perks:'Armorer 1', loc:'Torso' },
+      { name:'Raider II Arm', pr:1, er:0, rr:0, hp:3, weight:2, cost:7, perks:'Armorer 1', loc:'Arms' },
+      { name:'Raider II Leg', pr:1, er:0, rr:0, hp:3, weight:2, cost:7, perks:'Armorer 1', loc:'Legs' },
+      { name:'Welded Rebar', pr:0, er:0, rr:0, hp:0, weight:2, cost:25, perks:'Armorer 1', special:'Melee attackers suffer 2 DC on complication', loc:'Torso' },
+    ]
+  },
+  power_t45: {
+    name: 'T-45 Power Armor Upgrades',
+    mods: [
+      { name:'T-45b Helm', pr:0, er:0, rr:0, hp:1, weight:1, cost:3, perks:'Armorer 1', loc:'Head' },
+      { name:'T-45b Chest Piece', pr:0, er:0, rr:0, hp:1, weight:1, cost:7, perks:'Armorer 1', loc:'Torso' },
+      { name:'T-45b Arm', pr:1, er:1, rr:0, hp:1, weight:1, cost:7, perks:'Armorer 1', loc:'Arms' },
+      { name:'T-45b Leg', pr:1, er:1, rr:0, hp:1, weight:1, cost:7, perks:'Armorer 1', loc:'Legs' },
+      { name:'T-45c Helm', pr:1, er:1, rr:0, hp:2, weight:1, cost:6, perks:'Armorer 2', loc:'Head' },
+      { name:'T-45c Chest Piece', pr:0, er:0, rr:0, hp:4, weight:2, cost:14, perks:'Armorer 2', loc:'Torso' },
+      { name:'T-45c Arm', pr:2, er:2, rr:0, hp:2, weight:2, cost:10, perks:'Armorer 2', loc:'Arms' },
+      { name:'T-45c Leg', pr:2, er:2, rr:0, hp:2, weight:2, cost:10, perks:'Armorer 2', loc:'Legs' },
+      { name:'T-45d Helm', pr:1, er:1, rr:0, hp:3, weight:2, cost:9, perks:'Armorer 2, Science! 1', loc:'Head' },
+      { name:'T-45d Chest Piece', pr:1, er:1, rr:0, hp:5, weight:3, cost:21, perks:'Armorer 2, Science! 1', loc:'Torso' },
+      { name:'T-45d Arm', pr:2, er:3, rr:0, hp:3, weight:2, cost:15, perks:'Armorer 2, Science! 1', loc:'Arms' },
+      { name:'T-45d Leg', pr:2, er:3, rr:0, hp:3, weight:2, cost:15, perks:'Armorer 2, Science! 1', loc:'Legs' },
+      { name:'T-45e Helm', pr:1, er:2, rr:0, hp:3, weight:2, cost:12, perks:'Armorer 3, Science! 1', loc:'Head' },
+      { name:'T-45e Chest Piece', pr:1, er:1, rr:0, hp:7, weight:4, cost:28, perks:'Armorer 3, Science! 1', loc:'Torso' },
+      { name:'T-45e Arm', pr:3, er:3, rr:0, hp:3, weight:3, cost:20, perks:'Armorer 3, Science! 1', loc:'Arms' },
+      { name:'T-45e Leg', pr:3, er:3, rr:0, hp:3, weight:3, cost:20, perks:'Armorer 3, Science! 1', loc:'Legs' },
+      { name:'T-45f Helm', pr:2, er:2, rr:0, hp:4, weight:3, cost:15, perks:'Armorer 3, Science! 2', loc:'Head' },
+      { name:'T-45f Chest Piece', pr:1, er:1, rr:0, hp:8, weight:5, cost:35, perks:'Armorer 3, Science! 2', loc:'Torso' },
+      { name:'T-45f Arm', pr:3, er:4, rr:0, hp:4, weight:4, cost:25, perks:'Armorer 3, Science! 2', loc:'Arms' },
+      { name:'T-45f Leg', pr:3, er:4, rr:0, hp:4, weight:4, cost:25, perks:'Armorer 3, Science! 2', loc:'Legs' },
+    ]
+  },
+  power_t51: {
+    name: 'T-51 Power Armor Upgrades',
+    mods: [
+      { name:'T-51b Helm', pr:0, er:0, rr:0, hp:1, weight:1, cost:4, perks:'Armorer 1', loc:'Head' },
+      { name:'T-51b Chest Piece', pr:1, er:0, rr:0, hp:1, weight:1, cost:9, perks:'Armorer 1', loc:'Torso' },
+      { name:'T-51b Arm', pr:0, er:0, rr:0, hp:1, weight:1, cost:6, perks:'Armorer 1', loc:'Arms' },
+      { name:'T-51b Leg', pr:0, er:0, rr:0, hp:1, weight:1, cost:6, perks:'Armorer 1', loc:'Legs' },
+      { name:'T-51c Helm', pr:0, er:1, rr:0, hp:1, weight:1, cost:8, perks:'Armorer 2', loc:'Head' },
+      { name:'T-51c Chest Piece', pr:1, er:1, rr:0, hp:3, weight:2, cost:18, perks:'Armorer 2', loc:'Torso' },
+      { name:'T-51c Arm', pr:1, er:1, rr:0, hp:1, weight:2, cost:13, perks:'Armorer 2', loc:'Arms' },
+      { name:'T-51c Leg', pr:1, er:1, rr:0, hp:1, weight:2, cost:13, perks:'Armorer 2', loc:'Legs' },
+      { name:'T-51d Helm', pr:1, er:1, rr:0, hp:2, weight:2, cost:12, perks:'Armorer 2, Science! 1', loc:'Head' },
+      { name:'T-51d Chest Piece', pr:1, er:1, rr:0, hp:4, weight:3, cost:27, perks:'Armorer 2, Science! 1', loc:'Torso' },
+      { name:'T-51d Arm', pr:1, er:1, rr:0, hp:2, weight:2, cost:19, perks:'Armorer 2, Science! 1', loc:'Arms' },
+      { name:'T-51d Leg', pr:1, er:1, rr:0, hp:2, weight:2, cost:19, perks:'Armorer 2, Science! 1', loc:'Legs' },
+      { name:'T-51e Helm', pr:1, er:1, rr:0, hp:3, weight:2, cost:16, perks:'Armorer 3, Science! 1', loc:'Head' },
+      { name:'T-51e Chest Piece', pr:2, er:1, rr:0, hp:6, weight:4, cost:36, perks:'Armorer 3, Science! 1', loc:'Torso' },
+      { name:'T-51e Arm', pr:1, er:2, rr:0, hp:3, weight:3, cost:26, perks:'Armorer 3, Science! 1', loc:'Arms' },
+      { name:'T-51e Leg', pr:1, er:2, rr:0, hp:3, weight:3, cost:26, perks:'Armorer 3, Science! 1', loc:'Legs' },
+      { name:'T-51f Helm', pr:1, er:2, rr:0, hp:3, weight:3, cost:20, perks:'Armorer 3, Science! 2', loc:'Head' },
+      { name:'T-51f Chest Piece', pr:2, er:2, rr:0, hp:7, weight:5, cost:45, perks:'Armorer 3, Science! 2', loc:'Torso' },
+      { name:'T-51f Arm', pr:2, er:2, rr:0, hp:3, weight:4, cost:32, perks:'Armorer 3, Science! 2', loc:'Arms' },
+      { name:'T-51f Leg', pr:2, er:2, rr:0, hp:3, weight:4, cost:32, perks:'Armorer 3, Science! 2', loc:'Legs' },
+    ]
+  },
+  power_t60: {
+    name: 'T-60 Power Armor Upgrades',
+    mods: [
+      { name:'T-60b Helm', pr:1, er:1, rr:0, hp:1, weight:1, cost:32, perks:'—', loc:'Head' },
+      { name:'T-60b Chest Piece', pr:0, er:0, rr:0, hp:2, weight:1, cost:37, perks:'—', loc:'Torso' },
+      { name:'T-60b Arm', pr:1, er:1, rr:0, hp:1, weight:1, cost:35, perks:'—', loc:'Arms' },
+      { name:'T-60b Leg', pr:1, er:1, rr:0, hp:1, weight:1, cost:35, perks:'—', loc:'Legs' },
+      { name:'T-60c Helm', pr:1, er:1, rr:0, hp:2, weight:3, cost:64, perks:'Armorer 1, Science! 1', loc:'Head' },
+      { name:'T-60c Chest Piece', pr:1, er:0, rr:0, hp:3, weight:2, cost:74, perks:'Armorer 1, Science! 1', loc:'Torso' },
+      { name:'T-60c Arm', pr:1, er:1, rr:0, hp:2, weight:2, cost:70, perks:'Armorer 1, Science! 1', loc:'Arms' },
+      { name:'T-60c Leg', pr:1, er:1, rr:0, hp:2, weight:2, cost:70, perks:'Armorer 1, Science! 1', loc:'Legs' },
+      { name:'T-60d Helm', pr:1, er:2, rr:0, hp:2, weight:2, cost:96, perks:'Armorer 2, Science! 1', loc:'Head' },
+      { name:'T-60d Chest Piece', pr:1, er:1, rr:0, hp:5, weight:3, cost:111, perks:'Armorer 2, Science! 1', loc:'Torso' },
+      { name:'T-60d Arm', pr:1, er:2, rr:0, hp:2, weight:2, cost:105, perks:'Armorer 2, Science! 1', loc:'Arms' },
+      { name:'T-60d Leg', pr:1, er:2, rr:0, hp:2, weight:2, cost:105, perks:'Armorer 2, Science! 1', loc:'Legs' },
+      { name:'T-60e Helm', pr:2, er:2, rr:0, hp:3, weight:2, cost:128, perks:'Armorer 3, Science! 1', loc:'Head' },
+      { name:'T-60e Chest Piece', pr:1, er:1, rr:0, hp:7, weight:4, cost:148, perks:'Armorer 3, Science! 1', loc:'Torso' },
+      { name:'T-60e Arm', pr:2, er:2, rr:0, hp:3, weight:3, cost:140, perks:'Armorer 3, Science! 1', loc:'Arms' },
+      { name:'T-60e Leg', pr:2, er:2, rr:0, hp:3, weight:3, cost:140, perks:'Armorer 3, Science! 1', loc:'Legs' },
+      { name:'T-60f Helm', pr:2, er:3, rr:0, hp:4, weight:3, cost:160, perks:'Armorer 3, Science! 2', loc:'Head' },
+      { name:'T-60f Chest Piece', pr:2, er:1, rr:0, hp:8, weight:5, cost:185, perks:'Armorer 3, Science! 2', loc:'Torso' },
+      { name:'T-60f Arm', pr:2, er:3, rr:0, hp:4, weight:4, cost:175, perks:'Armorer 3, Science! 2', loc:'Arms' },
+      { name:'T-60f Leg', pr:2, er:3, rr:0, hp:4, weight:4, cost:175, perks:'Armorer 3, Science! 2', loc:'Legs' },
+    ]
+  },
+  power_x01: {
+    name: 'X-01 Power Armor Upgrades',
+    mods: [
+      { name:'Mk II Helm', pr:0, er:0, rr:0, hp:1, weight:1, cost:7, perks:'—', loc:'Head' },
+      { name:'Mk II Chest Piece', pr:0, er:0, rr:0, hp:1, weight:1, cost:14, perks:'—', loc:'Torso' },
+      { name:'Mk II Arm', pr:1, er:1, rr:0, hp:0, weight:1, cost:10, perks:'—', loc:'Arms' },
+      { name:'Mk II Leg', pr:1, er:1, rr:0, hp:0, weight:1, cost:10, perks:'—', loc:'Legs' },
+      { name:'Mk III Helm', pr:1, er:0, rr:0, hp:1, weight:1, cost:14, perks:'Armorer 1, Science! 1', loc:'Head' },
+      { name:'Mk III Chest Piece', pr:0, er:1, rr:0, hp:2, weight:2, cost:28, perks:'Armorer 1, Science! 1', loc:'Torso' },
+      { name:'Mk III Arm', pr:1, er:1, rr:0, hp:1, weight:2, cost:20, perks:'Armorer 1, Science! 1', loc:'Arms' },
+      { name:'Mk III Leg', pr:1, er:1, rr:0, hp:1, weight:2, cost:20, perks:'Armorer 1, Science! 1', loc:'Legs' },
+      { name:'Mk IV Helm', pr:1, er:1, rr:0, hp:2, weight:2, cost:21, perks:'Armorer 2, Science! 1', loc:'Head' },
+      { name:'Mk IV Chest Piece', pr:1, er:1, rr:0, hp:3, weight:3, cost:42, perks:'Armorer 2, Science! 1', loc:'Torso' },
+      { name:'Mk IV Arm', pr:1, er:1, rr:0, hp:2, weight:2, cost:30, perks:'Armorer 2, Science! 1', loc:'Arms' },
+      { name:'Mk IV Leg', pr:1, er:1, rr:0, hp:2, weight:2, cost:30, perks:'Armorer 2, Science! 1', loc:'Legs' },
+      { name:'Mk V Helm', pr:2, er:1, rr:0, hp:2, weight:2, cost:28, perks:'Armorer 3, Science! 1', loc:'Head' },
+      { name:'Mk V Chest Piece', pr:1, er:2, rr:0, hp:4, weight:4, cost:56, perks:'Armorer 3, Science! 1', loc:'Torso' },
+      { name:'Mk V Arm', pr:2, er:2, rr:0, hp:2, weight:3, cost:40, perks:'Armorer 3, Science! 1', loc:'Arms' },
+      { name:'Mk V Leg', pr:2, er:2, rr:0, hp:2, weight:3, cost:40, perks:'Armorer 3, Science! 1', loc:'Legs' },
+      { name:'Mk VI Helm', pr:2, er:2, rr:0, hp:3, weight:3, cost:35, perks:'Armorer 3, Science! 2', loc:'Head' },
+      { name:'Mk VI Chest Piece', pr:2, er:2, rr:0, hp:5, weight:5, cost:70, perks:'Armorer 3, Science! 2', loc:'Torso' },
+      { name:'Mk VI Arm', pr:2, er:3, rr:0, hp:4, weight:4, cost:50, perks:'Armorer 3, Science! 2', loc:'Arms' },
+      { name:'Mk VI Leg', pr:2, er:3, rr:0, hp:4, weight:4, cost:50, perks:'Armorer 3, Science! 2', loc:'Legs' },
+      { name:'EMP Shielding', pr:0, er:2, rr:0, hp:0, weight:1, cost:20, perks:'Armorer 1', special:'+2 ER', loc:'Any' },
+    ]
+  },
+  power_system: {
+    name: 'Power Armor System Mods',
+    mods: [
+      { name:'Rad Scrubber', pr:0, er:0, rr:0, hp:0, weight:1, cost:100, perks:'Science! 2', special:'Ignore radiation from irradiated food/drink', loc:'Head', skill:'Science' },
+      { name:'Sensor Array', pr:0, er:0, rr:0, hp:0, weight:1, cost:100, perks:'Science! 3', special:'Re-roll 1d20 on PER tests', loc:'Head', skill:'Science' },
+      { name:'Targeting HUD', pr:0, er:0, rr:0, hp:0, weight:1, cost:100, perks:'Science! 3', special:'Aim grants free minor action', loc:'Head', skill:'Science' },
+      { name:'Internal Database', pr:0, er:0, rr:0, hp:0, weight:1, cost:100, perks:'Science! 2', special:'Re-roll 1d20 on INT tests', loc:'Head', skill:'Science' },
+      { name:'Welded Rebar', pr:0, er:0, rr:0, hp:0, weight:2, cost:25, perks:'Armorer 1', special:'Melee attackers suffer 2 DC on complication', loc:'Torso', skill:'Repair' },
+      { name:'Core Assembly', pr:0, er:0, rr:0, hp:0, weight:2, cost:100, perks:'Science! 3', special:'+1 AP to group pool if empty at turn start', loc:'Torso', skill:'Science' },
+      { name:'Blood Cleanser', pr:0, er:0, rr:0, hp:0, weight:2, cost:100, perks:'Science! 1', special:'Re-roll addiction rolls', loc:'Torso', skill:'Science' },
+      { name:'Emergency Protocols', pr:0, er:0, rr:0, hp:0, weight:2, cost:100, perks:'Science! 4', special:'Below 1/4 HP: +1 Defense, +3 all DR', loc:'Torso', skill:'Science' },
+      { name:'Motion-Assist Servos', pr:0, er:0, rr:0, hp:0, weight:2, cost:100, perks:'Science! 3', special:'STR 13', loc:'Torso', skill:'Science' },
+      { name:'Kinetic Dynamo', pr:0, er:0, rr:0, hp:0, weight:2, cost:100, perks:'Science! 4', special:'When damaged, +1 AP to group pool', loc:'Torso', skill:'Science' },
+      { name:'Medic Pump', pr:0, er:0, rr:0, hp:0, weight:2, cost:100, perks:'Science! 4', special:'Auto-stim at 1/2 HP: heal 3 or treat injury', loc:'Torso', skill:'Science' },
+      { name:'Reactive Plates', pr:0, er:0, rr:0, hp:0, weight:2, cost:100, perks:'Armorer 4', special:'Return half melee damage', loc:'Torso', skill:'Repair' },
+      { name:'Tesla Coils', pr:0, er:0, rr:0, hp:0, weight:2, cost:100, perks:'Science! 3', special:'Melee attackers suffer 4 DC Energy', loc:'Torso', skill:'Science' },
+      { name:'Stealth Boy', pr:0, er:0, rr:0, hp:0, weight:1, cost:100, perks:'Science! 4', special:'Activate Stealth Boy 1/scene', loc:'Torso', skill:'Science' },
+      { name:'Jetpack', pr:0, er:0, rr:0, hp:0, weight:1, cost:500, perks:'Armorer 4, Science! 4', special:'Move +1 zone (spend charge)', loc:'Torso', skill:'Repair' },
+      { name:'Rusty Knuckles', pr:0, er:0, rr:0, hp:0, weight:1, cost:50, perks:'Blacksmith 1', special:'Unarmed gains Persistent', loc:'Arms', skill:'Repair' },
+      { name:'Hydraulic Bracers', pr:0, er:0, rr:0, hp:0, weight:1, cost:100, perks:'Blacksmith 3', special:'Unarmed +2 DC', loc:'Arms', skill:'Repair' },
+      { name:'Optimized Bracers', pr:0, er:0, rr:0, hp:0, weight:1, cost:100, perks:'Blacksmith 1', special:'Spend 4 AP on melee damage', loc:'Arms', skill:'Repair' },
+      { name:'Tesla Bracers', pr:0, er:0, rr:0, hp:0, weight:1, cost:150, perks:'Blacksmith 3, Science! 1', special:'Unarmed +2 DC Energy', loc:'Arms', skill:'Repair' },
+      { name:'Calibrated Shocks', pr:0, er:0, rr:0, hp:0, weight:1, cost:100, perks:'Science! 2', special:'+50 carry weight', loc:'Legs', skill:'Science' },
+      { name:'Explosive Vent', pr:0, er:0, rr:0, hp:0, weight:1, cost:100, perks:'Science! 3', special:'Landing: 4 DC to all in Close', loc:'Legs', skill:'Science' },
+      { name:'Overdrive Servos', pr:0, er:0, rr:0, hp:0, weight:1, cost:100, perks:'Science! 3', special:'Sprint: +2 AP for +1 zone', loc:'Legs', skill:'Science' },
+    ]
+  },
+  power_plating: {
+    name: 'Power Armor Plating Mods',
+    mods: [
+      { name:'Titanium Plating', pr:0, er:0, rr:0, hp:1, weight:1, cost:10, perks:'Armorer 3', special:'+1 HP (+2 Torso)', loc:'Any', skill:'Repair' },
+      { name:'Lead Plating', pr:0, er:0, rr:2, hp:0, weight:2, cost:10, perks:'Armorer 1', special:'+2 RR', loc:'Any', skill:'Repair' },
+      { name:'Photovoltaic Plating', pr:0, er:0, rr:0, hp:0, weight:1, cost:10, perks:'Science! 3', special:'+1 AP start of scene in sunlight', loc:'Any', skill:'Science' },
+      { name:'Winterized Coating', pr:0, er:1, rr:0, hp:0, weight:1, cost:10, perks:'Armorer 1', special:'+1 ER', loc:'Any', skill:'Repair' },
+      { name:'Prism Shielding', pr:0, er:3, rr:0, hp:0, weight:2, cost:10, perks:'Science! 2', special:'+3 ER', loc:'Any', skill:'Science' },
+      { name:'Explosive Shielding', pr:0, er:0, rr:0, hp:0, weight:1, cost:10, perks:'Science! 1', special:'+2 all DR vs Blast', loc:'Any', skill:'Science' },
+    ]
+  },
+  robot: {
+    name: 'Robot Armor Types',
+    mods: [
+      { name:'Standard Plating', pr:2, er:0, rr:0, weight:0, cost:0, perks:'—', loc:'All', special:'Base plating' },
+      { name:'Mister Gutsy Plating', pr:2, er:2, rr:0, weight:-10, cost:0, perks:'—', loc:'All', special:'' },
+      { name:'Factory Armor Optics', pr:1, er:1, rr:0, weight:0, cost:10, perks:'—', loc:'Head', special:'+1 PR/ER' },
+      { name:'Factory Armor Main Body', pr:1, er:1, rr:0, weight:0, cost:20, perks:'—', loc:'Torso', special:'+1 PR/ER' },
+      { name:'Factory Armor Arms', pr:1, er:1, rr:0, weight:0, cost:10, perks:'—', loc:'Arms', special:'+1 PR/ER' },
+      { name:'Factory Armor Thruster', pr:1, er:1, rr:0, weight:0, cost:10, perks:'—', loc:'Legs', special:'+1 PR/ER' },
+      { name:'Factory Storage Armor', pr:1, er:1, rr:0, weight:0, cost:25, perks:'Armorer 1', loc:'Torso', special:'+20 carry' },
+      { name:'Primal Plate Optics', pr:2, er:0, rr:0, weight:-10, cost:10, perks:'—', loc:'Head', special:'+2 PR' },
+      { name:'Primal Plate Main Body', pr:2, er:0, rr:0, weight:-20, cost:20, perks:'—', loc:'Torso', special:'+2 PR' },
+      { name:'Primal Plate Arms', pr:2, er:0, rr:0, weight:-10, cost:10, perks:'—', loc:'Arms', special:'+2 PR' },
+      { name:'Primal Plate Thruster', pr:2, er:0, rr:0, weight:-10, cost:10, perks:'—', loc:'Legs', special:'+2 PR' },
+      { name:'Serrated Plate Optics', pr:2, er:0, rr:0, weight:-10, cost:15, perks:'Armorer 1', loc:'Head', special:'+2 PR' },
+      { name:'Serrated Plate Main Body', pr:2, er:0, rr:0, weight:-20, cost:30, perks:'Armorer 1', loc:'Torso', special:'+2 PR' },
+      { name:'Serrated Plate Arms', pr:2, er:0, rr:0, weight:-10, cost:15, perks:'Armorer 1', loc:'Arms', special:'+2 PR' },
+      { name:'Serrated Plate Thruster', pr:2, er:0, rr:0, weight:-10, cost:15, perks:'Armorer 1', loc:'Legs', special:'+2 PR' },
+      { name:'Noxious Plate Optics', pr:2, er:0, rr:0, weight:-10, cost:15, perks:'Armorer 1', loc:'Head', special:'+2 PR' },
+      { name:'Noxious Plate Main Body', pr:2, er:0, rr:0, weight:-20, cost:30, perks:'Armorer 1', loc:'Torso', special:'+2 PR' },
+      { name:'Noxious Plate Arms', pr:2, er:0, rr:0, weight:-10, cost:15, perks:'Armorer 1', loc:'Arms', special:'+2 PR' },
+      { name:'Noxious Plate Thruster', pr:2, er:0, rr:0, weight:-10, cost:15, perks:'Armorer 1', loc:'Legs', special:'+2 PR' },
+      { name:'Toxic Plate Optics', pr:2, er:0, rr:0, weight:-10, cost:15, perks:'Armorer 3', loc:'Head', special:'+2 PR' },
+      { name:'Toxic Plate Main Body', pr:2, er:0, rr:0, weight:-20, cost:30, perks:'Armorer 3', loc:'Torso', special:'+2 PR' },
+      { name:'Toxic Plate Arms', pr:2, er:0, rr:0, weight:-10, cost:15, perks:'Armorer 3', loc:'Arms', special:'+2 PR' },
+      { name:'Toxic Plate Thruster', pr:2, er:0, rr:0, weight:-10, cost:15, perks:'Armorer 3', loc:'Legs', special:'+2 PR' },
+      { name:'Actuated Frame Optics', pr:1, er:1, rr:0, weight:10, cost:15, perks:'—', loc:'Head', special:'+10 carry' },
+      { name:'Actuated Frame Main Body', pr:1, er:1, rr:0, weight:20, cost:30, perks:'—', loc:'Torso', special:'+20 carry' },
+      { name:'Actuated Frame Arms', pr:1, er:1, rr:0, weight:10, cost:15, perks:'—', loc:'Arms', special:'+10 carry' },
+      { name:'Actuated Frame Thruster', pr:1, er:1, rr:0, weight:10, cost:15, perks:'—', loc:'Legs', special:'+10 carry' },
+      { name:'Voltaic Frame Optics', pr:2, er:2, rr:0, weight:10, cost:20, perks:'Armorer 2', loc:'Head', special:'+10 carry' },
+      { name:'Voltaic Frame Main Body', pr:2, er:2, rr:0, weight:20, cost:40, perks:'Armorer 2', loc:'Torso', special:'+20 carry' },
+      { name:'Voltaic Frame Arms', pr:2, er:2, rr:0, weight:10, cost:20, perks:'Armorer 2', loc:'Arms', special:'+10 carry' },
+      { name:'Voltaic Frame Thruster', pr:2, er:2, rr:0, weight:10, cost:20, perks:'Armorer 2', loc:'Legs', special:'+10 carry' },
+      { name:'Hydraulic Frame Optics', pr:3, er:3, rr:0, weight:5, cost:30, perks:'Armorer 3', loc:'Head', special:'+5 carry' },
+      { name:'Hydraulic Frame Main Body', pr:3, er:3, rr:0, weight:10, cost:60, perks:'Armorer 3', loc:'Torso', special:'+10 carry' },
+      { name:'Hydraulic Frame Arms', pr:3, er:3, rr:0, weight:5, cost:30, perks:'Armorer 3', loc:'Arms', special:'+5 carry' },
+      { name:'Hydraulic Frame Thruster', pr:3, er:3, rr:0, weight:5, cost:30, perks:'Armorer 3', loc:'Legs', special:'+5 carry' },
+    ]
+  },
+};
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let cat='all', view='table', sortKey='name', sortDir=1, expanded=null, modsOpen={ballistic:false,jumpsuit:false,raider:false,leather:false,metal:false,combat:false,synth:false,general:false,power_raider:false,power_t45:false,power_t51:false,power_t60:false,power_x01:false,power_system:false,power_plating:false,robot:false};
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+function init() {
+  const cats = ['clothing','outfit','headgear','raider','leather','metal','combat','synth','power','robot','dog'];
+  let total = 0;
+  cats.forEach(c => {
+    const n = ARMOR.filter(w => w.cat === c).length;
+    const cntEl = document.getElementById('cnt-'+c);
+    const sbEl = document.getElementById('sb-'+c);
+    if (cntEl) cntEl.textContent = n;
+    if (sbEl) sbEl.textContent = n;
+    total += n;
+  });
+  document.getElementById('cnt-all').textContent = total;
+  document.getElementById('sb-all').textContent = total;
+  document.getElementById('cnt-power').textContent = ARMOR.filter(w => w.cat === 'power').length;
+  document.getElementById('sb-power').textContent = ARMOR.filter(w => w.cat === 'power').length;
+  document.getElementById('cnt-robot').textContent = ARMOR.filter(w => w.cat === 'robot').length;
+  document.getElementById('sb-robot').textContent = ARMOR.filter(w => w.cat === 'robot').length;
+  filter();
+}
+
+function showCat(c) {
+  cat = c;
+  expanded = null;
+  const tabs = ['all','clothing','outfit','headgear','raider','leather','metal','combat','synth','power','robot','dog'];
+  document.querySelectorAll('.cat-tab').forEach((t,i) => t.classList.toggle('active', tabs[i] === c));
+  document.querySelectorAll('.sb-link').forEach((l,i) => l.classList.toggle('active', tabs[i] === c));
+  filter();
+}
+
+function setView(v) {
+  view = v;
+  document.getElementById('btn-tbl').classList.toggle('active', v === 'table');
+  document.getElementById('btn-crd').classList.toggle('active', v === 'cards');
+  filter();
+}
+
+function filter() {
+  const q = document.getElementById('search-box').value.toLowerCase();
+  const loc = document.getElementById('f-loc').value;
+  const minPr = document.getElementById('f-pr').value;
+  const rar = document.getElementById('f-rar').value;
+
+  let list = ARMOR.filter(a => {
+    if (cat !== 'all' && a.cat !== cat) return false;
+    if (q && !a.name.toLowerCase().includes(q) && !a.qualities.join(' ').toLowerCase().includes(q)) return false;
+    if (loc && !a.loc.includes(loc)) return false;
+    if (minPr && a.pr < parseInt(minPr)) return false;
+    if (rar !== '' && String(a.rarity) !== rar) return false;
+    return true;
+  });
+
+  list.sort((a,b) => {
+    let av = a[sortKey] ?? -1, bv = b[sortKey] ?? -1;
+    if (typeof av === 'string') av = av.toLowerCase();
+    if (typeof bv === 'string') bv = bv.toLowerCase();
+    return av < bv ? -sortDir : av > bv ? sortDir : 0;
+  });
+
+  document.getElementById('shown-count').textContent = list.length;
+  render(list);
+}
+
+function setSort(k) {
+  sortDir = sortKey === k ? -sortDir : 1;
+  sortKey = k;
+  filter();
+}
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+const CAT_TITLES = {
+  all:'All Armor', clothing:'Clothing', outfit:'Outfits', headgear:'Headgear',
+  raider:'Raider Armor', leather:'Leather Armor', metal:'Metal Armor',
+  combat:'Combat Armor', synth:'Synth Armor', power:'Power Armor', robot:'Robot Armor', dog:'Dog Armor'
+};
+
+const CAT_DESCS = {
+  all:'Complete catalog of protective gear from the wasteland. Clothing can be worn under armor; outfits are standalone. Armor pieces cover individual locations and can be mixed.',
+  clothing:'Basic apparel that provides minimal protection but can be worn under armor. Most clothing can accept Ballistic Weave lining for improved defense.',
+  outfit:'Full-body garments that cannot be combined with armor pieces. Often provide better protection than clothing or unique bonuses.',
+  headgear:'Helmets, hats, and masks protecting the head. May offer additional benefits like respiratory protection or enhanced perception.',
+  raider:'Makeshift armor cobbled together from scrap. The only type that fits super mutants. Sturdy and Heavy versions offer better protection.',
+  leather:'Tanned and treated animal hides offering good energy resistance. Can be modified with various material upgrades.',
+  metal:'Salvaged metal plates offering excellent physical resistance but are noisy. Multiple material grades available.',
+  combat:'Military-grade armor offering balanced protection. Standard issue for organized forces.',
+  synth:'Advanced composite armor used by Institute synths. High energy resistance and lightweight construction.',
+  power:'Powered exoskeleton armor requiring a frame and fusion core. Each piece has its own Health Points; when HP reaches 0, the piece is destroyed.',
+  robot:'Upgrade plating for robot companions. Each location (Optics, Main Body, Arms, Thruster) can be upgraded independently.',
+  dog:'Protective gear for canine companions. Requires the Dogmeat perk to utilize.'
+};
+
+function render(list) {
+  const out = document.getElementById('content');
+
+  // Rule boxes
+  let ruleHtml = '';
+  ruleHtml += `<div class="rule-grid">`;
+  ruleHtml += `
+    <div class="rule-box">
+      <div class="rule-title">📋 Armor Stacking Rules</div>
+      <strong>Clothing + Armor:</strong> Use highest DR per location. Clothing can be worn under armor.<br>
+      <strong>Outfits:</strong> Cannot combine with armor pieces—they cover everything.<br>
+      <strong>Piecemeal:</strong> Mix different armor types per location (arm, leg, torso).<br>
+      <strong>Headgear:</strong> Only one item on head; provides DR for head hits.
+    </div>
+    <div class="rule-box" style="border-left-color:var(--blue)">
+      <div class="rule-title" style="color:var(--blue)">🔧 Special Restrictions</div>
+      <strong>Super Mutants:</strong> Only Raider Armor fits their bulky frame.<br>
+      <strong>Robots:</strong> Use hull upgrades instead of worn armor.<br>
+      <strong>Ballistic Weave:</strong> Requires Armorer perk; installed with Repair.<br>
+      <strong>Shadowed:</strong> +1 Difficulty to detect wearer in shadows.<br>
+      <strong>Power Armor:</strong> Requires frame and fusion core to operate.
+    </div>`;
+  ruleHtml += `</div>`;
+
+  // Mods panels
+  let modsHtml = '';
+  modsHtml += renderModsToggle('ballistic', 'Ballistic Weave Mods');
+  modsHtml += renderModsToggle('jumpsuit', 'Vault Jumpsuit Linings');
+  modsHtml += renderModsToggle('raider', 'Raider Material Mods');
+  modsHtml += renderModsToggle('leather', 'Leather Material Mods');
+  modsHtml += renderModsToggle('metal', 'Metal Material Mods');
+  modsHtml += renderModsToggle('combat', 'Combat Material Mods');
+  modsHtml += renderModsToggle('synth', 'Synth Material Mods');
+  modsHtml += renderModsToggle('general', 'Universal Armor Upgrades (Repair)');
+  modsHtml += renderModsToggle('power_raider', 'Raider Power Armor Upgrades');
+  modsHtml += renderModsToggle('power_t45', 'T-45 Power Armor Upgrades');
+  modsHtml += renderModsToggle('power_t51', 'T-51 Power Armor Upgrades');
+  modsHtml += renderModsToggle('power_t60', 'T-60 Power Armor Upgrades');
+  modsHtml += renderModsToggle('power_x01', 'X-01 Power Armor Upgrades');
+  modsHtml += renderModsToggle('power_system', 'Power Armor System Mods');
+  modsHtml += renderModsToggle('power_plating', 'Power Armor Plating Mods');
+  modsHtml += renderModsToggle('robot', 'Robot Armor Types');
+
+  if (!list.length) {
+    out.innerHTML = `<div class="cat-header"><div class="cat-title">${CAT_TITLES[cat]}</div><div class="cat-desc">${CAT_DESCS[cat]}</div></div>${ruleHtml}${modsHtml}<div class="no-results"><span class="big">// NO PROTECTION FOUND //</span>No armor matches your current filters.</div>`;
+    return;
+  }
+
+  let html = `<div class="cat-header"><div class="cat-title">${CAT_TITLES[cat]}</div><div class="cat-desc">${CAT_DESCS[cat]}</div></div>${ruleHtml}${modsHtml}`;
+  html += view === 'table' ? renderTable(list) : renderCards(list);
+  out.innerHTML = html;
+
+  // Restore mods toggle state
+  ['ballistic','jumpsuit','raider','leather','metal','combat','synth','general','power_raider','power_t45','power_t51','power_t60','power_x01','power_system','power_plating','robot'].forEach(k => {
+    const p = document.getElementById('mods-panel-'+k);
+    const b = document.getElementById('mods-btn-'+k);
+    if (p && modsOpen[k]) { p.classList.add('open'); b && b.classList.add('open'); }
+  });
+}
+
+function renderModsToggle(key, label) {
+  const modsData = ARMOR_MODS[key];
+  if (!modsData) return '';
+
+  let cats = `<div class="mods-cat-title">${modsData.name}</div>
+    <table class="mods-table"><thead><tr>
+      <th>Mod Name</th><th>PR</th><th>ER</th><th>RR</th>${key.includes('power') && !key.includes('system') && !key.includes('plating') ? '<th>HP</th>' : ''}<th>Wt</th><th>Cost</th><th>Perks</th><th>Special</th>${key === 'general' ? '<th>Loc</th>' : ''}${key.includes('system') || key.includes('plating') ? '<th>Skill</th>' : ''}
+    </tr></thead><tbody>`;
+
+  modsData.mods.forEach(m => {
+    cats += `<tr>
+      <td>${m.name}</td>
+      <td style="color:var(--red);text-align:center">${m.pr ? '+' + m.pr : '—'}</td>
+      <td style="color:var(--blue);text-align:center">${m.er ? '+' + m.er : '—'}</td>
+      <td style="color:var(--green);text-align:center">${m.rr ? '+' + m.rr : '—'}</td>
+      ${key.includes('power') && !key.includes('system') && !key.includes('plating') ? `<td style="color:var(--amber);text-align:center">${m.hp ? '+' + m.hp : '—'}</td>` : ''}
+      <td style="text-align:center">${m.weight ? (m.weight > 0 ? '+' + m.weight : m.weight) : '—'}</td>
+      <td style="text-align:center;color:var(--amber)">+${m.cost}</td>
+      <td>${m.perks !== '—' ? `<span class="perk-badge">${m.perks}</span>` : '—'}</td>
+      <td>${m.special || '—'}</td>
+      ${key === 'general' ? `<td>${m.loc || '—'}</td>` : ''}
+      ${key.includes('system') || key.includes('plating') ? `<td>${m.skill || '—'}</td>` : ''}
+    </tr>`;
+  });
+  cats += '</tbody></table>';
+
+  return `
+    <button class="mods-toggle" id="mods-btn-${key}" onclick="toggleMods('${key}')">
+      ▸ ${label} <span style="opacity:0.5;font-size:0.6rem">(CLICK TO EXPAND)</span>
+    </button>
+    <div class="mods-panel" id="mods-panel-${key}">${cats}</div>`;
+}
+
+function toggleMods(key) {
+  modsOpen[key] = !modsOpen[key];
+  const p = document.getElementById('mods-panel-'+key);
+  const b = document.getElementById('mods-btn-'+key);
+  if (p) p.classList.toggle('open', modsOpen[key]);
+  if (b) b.classList.toggle('open', modsOpen[key]);
+  if (b) b.querySelector('span').textContent = modsOpen[key] ? '(CLICK TO COLLAPSE)' : '(CLICK TO EXPAND)';
+}
+
+function renderTable(list) {
+  const a = k => `<span class="sa">${sortKey === k ? (sortDir === 1 ? '▲' : '▼') : '⇅'}</span>`;
+  let h = `<div class="items-table-wrap"><table class="items-table"><thead><tr>
+    <th onclick="setSort('name')" class="${sortKey === 'name' ? 'sorted' : ''}">Armor ${a('name')}</th>
+    <th onclick="setSort('cat')" class="${sortKey === 'cat' ? 'sorted' : ''}">Type ${a('cat')}</th>
+    <th onclick="setSort('pr')" class="${sortKey === 'pr' ? 'sorted' : ''}">PR ${a('pr')}</th>
+    <th onclick="setSort('er')" class="${sortKey === 'er' ? 'sorted' : ''}">ER ${a('er')}</th>
+    <th onclick="setSort('rr')" class="${sortKey === 'rr' ? 'sorted' : ''}">RR ${a('rr')}</th>
+    ${list.some(a => a.hp !== undefined) ? '<th onclick="setSort(\'hp\')" class="' + (sortKey === 'hp' ? 'sorted' : '') + '">HP ' + a('hp') + '</th>' : ''}
+    <th>Location</th>
+    <th>Qualities</th>
+    <th onclick="setSort('weight')" class="${sortKey === 'weight' ? 'sorted' : ''}">Wt ${a('weight')}</th>
+    <th onclick="setSort('cost')" class="${sortKey === 'cost' ? 'sorted' : ''}">Caps ${a('cost')}</th>
+    <th onclick="setSort('rarity')" class="${sortKey === 'rarity' ? 'sorted' : ''}">Rarity ${a('rarity')}</th>
+  </tr></thead><tbody>`;
+
+  list.forEach(a => {
+    const exp = expanded === a.id;
+    const catLabel = {
+      clothing:'Clothing', outfit:'Outfit', headgear:'Headgear',
+      raider:'Raider', leather:'Leather', metal:'Metal',
+      combat:'Combat', synth:'Synth', power:'Power', robot:'Robot', dog:'Dog'
+    }[a.cat];
+
+    h += `<tr class="${exp ? 'expanded' : ''}" onclick="toggleExp('${a.id}')">
+      <td><div class="iname">${a.name}</div></td>
+      <td style="font-size:0.68rem;color:var(--text-dim)">${catLabel}</td>
+      <td><div class="pr-val">${a.pr}</div></td>
+      <td><div class="er-val">${a.er}</div></td>
+      <td><div class="rr-val">${a.rr === 'Immune' ? '∞' : a.rr}</div></td>
+      ${a.hp !== undefined ? `<td><div class="hp-val">${a.hp}</div></td>` : ''}
+      <td>${locBadges(a.loc)}</td>
+      <td>${qualityTags(a.qualities, a.modSlots)}</td>
+      <td style="font-size:0.73rem;color:var(--text-dim)">${a.weight} lb</td>
+      <td><div class="cost-val">${a.cost}</div></td>
+      <td>${rPips(a.rarity)}</td>
+    </tr>`;
+
+    if (exp) {
+      let colspan = a.hp !== undefined ? 11 : 10;
+      h += `<tr class="detail-row"><td colspan="${colspan}">${detail(a)}</td></tr>`;
+    }
+  });
+
+  return h + '</tbody></table></div>';
+}
+
+function renderCards(list) {
+  let h = '<div class="items-cards">';
+  list.forEach(a => {
+    const exp = expanded === a.id;
+    h += `<div class="item-card ${exp ? 'selected' : ''}" onclick="toggleExp('${a.id}')">
+      <div class="ic-name">${a.name}</div>
+      <div class="ic-loc">${a.loc}</div>
+      <div class="ic-stats">
+        <div class="ic-stat"><div class="ic-stat-val" style="color:var(--red)">${a.pr}</div><div class="ic-stat-label">PR</div></div>
+        <div class="ic-stat"><div class="ic-stat-val" style="color:var(--blue)">${a.er}</div><div class="ic-stat-label">ER</div></div>
+        <div class="ic-stat"><div class="ic-stat-val" style="color:var(--green)">${a.rr === 'Immune' ? '∞' : a.rr}</div><div class="ic-stat-label">RR</div></div>
+        ${a.hp ? `<div class="ic-stat"><div class="ic-stat-val" style="color:var(--amber)">${a.hp}</div><div class="ic-stat-label">HP</div></div>` : ''}
+      </div>
+      <div class="ic-tags">${qualityTags(a.qualities, a.modSlots)}</div>
+      <div style="margin-top:0.5rem;display:flex;justify-content:space-between">
+        <span style="color:var(--text-dim);font-size:0.7rem">${a.weight} lb</span>
+        <span class="cost-val">${a.cost} caps</span>
+      </div>
+      <div style="margin-top:0.5rem">${rPips(a.rarity)}</div>
+    </div>`;
+
+    if (exp) h += `<div style="grid-column:1/-1;background:var(--panel3);border:1px solid rgba(245,166,35,0.2);border-top:2px solid var(--amber);margin-bottom:0.5rem">${detail(a)}</div>`;
+  });
+  return h + '</div>';
+}
+
+function detail(a) {
+  const catFull = {
+    clothing:'Clothing', outfit:'Outfit', headgear:'Headgear',
+    raider:'Raider Armor', leather:'Leather Armor', metal:'Metal Armor',
+    combat:'Combat Armor', synth:'Synth Armor', power:'Power Armor', robot:'Robot Armor', dog:'Dog Armor'
+  }[a.cat];
+
+  let modNote = a.modSlots && a.modSlots.length ?
+    `Can accept mods: ${a.modSlots.join(', ')}.` :
+    'No mod slots.';
+
+  if (a.cat === 'power') {
+    modNote = 'Power armor requires a frame and fusion core to operate. Each piece has its own HP; when HP reaches 0, the piece is destroyed.';
+  }
+
+  if (a.cat === 'robot') {
+    modNote = 'Robot armor upgrades are installed per location (Optics, Main Body, Arms, Thruster).';
+  }
+
+  return `<div class="detail-inner">
+    <div>
+      <div class="d-title">Protection Details</div>
+      <div class="d-row"><span class="key">Category</span><span class="val">${catFull}</span></div>
+      <div class="d-row"><span class="key">Physical (PR)</span><span class="val" style="color:var(--red)">${a.pr}</span></div>
+      <div class="d-row"><span class="key">Energy (ER)</span><span class="val" style="color:var(--blue)">${a.er}</span></div>
+      <div class="d-row"><span class="key">Radiation (RR)</span><span class="val" style="color:var(--green)">${a.rr === 'Immune' ? 'Immune' : a.rr}</span></div>
+      ${a.hp ? `<div class="d-row"><span class="key">Health Points</span><span class="val" style="color:var(--amber)">${a.hp}</span></div>` : ''}
+      <div class="d-row"><span class="key">Location</span><span class="val">${a.loc}</span></div>
+      <div class="d-row"><span class="key">Weight</span><span class="val">${a.weight} lbs</span></div>
+      <div class="d-row"><span class="key">Cost</span><span class="val">${a.cost} caps</span></div>
+      <div class="d-row"><span class="key">Rarity</span><span class="val">${a.rarity}/5</span></div>
+    </div>
+    <div>
+      <div class="d-title">Qualities & Mods</div>
+      <div class="d-qualities">${qualityTags(a.qualities, a.modSlots)}</div>
+      <div class="d-title" style="margin-top:1rem">Modding</div>
+      <div class="d-rules">${modNote}</div>
+      ${a.cat === 'clothing' ? '<div class="d-rules" style="margin-top:0.5rem"><strong>Ballistic Weave:</strong> Can be upgraded for +PR/ER with Armorer perk.</div>' : ''}
+      ${a.id.includes('vault_jumpsuit') ? '<div class="d-rules" style="margin-top:0.5rem"><strong>Vault-Tec Lining:</strong> Special linings available for energy/rad resistance.</div>' : ''}
+      ${a.cat === 'power' ? '<div class="d-rules" style="margin-top:0.5rem"><strong>Power Armor Upgrades:</strong> Multiple upgrade paths available (Raider II, T-45b-f, T-51b-f, T-60b-f, X-01 Mk II-VI). System mods and plating also available.</div>' : ''}
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function locBadges(locStr) {
+  if (!locStr) return '<span style="color:var(--text-dim)">—</span>';
+  return locStr.split(',').map(l => {
+    const loc = l.trim();
+    let cls = 'loc-badge ';
+    if (loc === 'Head' || loc === 'Optics') cls += 'loc-Head';
+    else if (loc.includes('Arm')) cls += 'loc-Arms';
+    else if (loc.includes('Leg') || loc === 'Thruster') cls += 'loc-Legs';
+    else if (loc === 'Torso' || loc === 'Main Body') cls += 'loc-Torso';
+    else if (loc === 'All') cls += 'loc-Head';
+    return `<span class="${cls}">${loc}</span>`;
+  }).join(' ');
+}
+
+const NOTABLE_QUALITIES = ['Sealed','Shadowed','Lightweight','Noisy','Military','Vault-Tec','Advanced','Bulky','Reinforced','Powered','Raider','T-45','T-51','T-60','X-01','Frame','Canine','Makeshift'];
+function qualityTags(qs, modSlots) {
+  if ((!qs || !qs.length) && (!modSlots || !modSlots.length)) return '<span style="color:var(--text-dim);font-size:0.65rem">—</span>';
+  let tags = [];
+  if (qs && qs.length) tags = tags.concat(qs.map(q => `<span class="quality-tag ${NOTABLE_QUALITIES.includes(q) ? 'notable' : ''} ${q === 'Shadowed' ? 'shadowed' : ''}">${q}</span>`));
+  if (modSlots && modSlots.length) tags.push(`<span class="quality-tag" style="border-color:var(--teal);color:var(--teal)">🛠️ ${modSlots.length} mod slot${modSlots.length > 1 ? 's' : ''}</span>`);
+  return tags.join('');
+}
+
+function rPips(r) {
+  return `<div class="rarity">${Array.from({length:5}, (_,i) => `<div class="rarity-pip ${i < r ? 'filled' : ''}"></div>`).join('')}</div>`;
+}
+
+function toggleExp(id) {
+  expanded = expanded === id ? null : id;
+  filter();
+  if (expanded) setTimeout(() => { document.querySelector('.detail-inner')?.scrollIntoView({behavior:'smooth',block:'nearest'}); }, 60);
+}
+
+init();
+</script>
+</body>
+</html>

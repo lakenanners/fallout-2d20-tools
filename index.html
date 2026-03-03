@@ -208,7 +208,7 @@ body::after {
   text-transform: uppercase;
 }
 
-/* 2x2 GRID */
+/* 2x3 GRID for 5 modules + placeholder */
 #cards {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -421,6 +421,8 @@ body::after {
 .boot-line:nth-child(8)  { animation-delay: 1.15s; }
 .boot-line:nth-child(9)  { animation-delay: 1.3s; }
 .boot-line:nth-child(10) { animation-delay: 1.5s; }
+.boot-line:nth-child(11) { animation-delay: 1.65s; }
+.boot-line:nth-child(12) { animation-delay: 1.8s; }
 
 @keyframes bootLine { from { opacity: 0; } to { opacity: 1; } }
 
@@ -443,11 +445,13 @@ body::after {
     <span class="boot-line">Copyright 2075-2077 RobCo Industries</span>
     <span class="boot-line">-Pip-Boy Model 3000 Mark IV-</span>
     <span class="boot-line">&nbsp;</span>
-    <span class="boot-line">INITIALIZING WASTELAND COMPENDIUM v1.0...</span>
+    <span class="boot-line">INITIALIZING WASTELAND COMPENDIUM v2.0...</span>
     <span class="boot-line">LOADING RULES DATABASE............. OK</span>
     <span class="boot-line">LOADING CHARACTER PROTOCOLS........ OK</span>
-    <span class="boot-line">LOADING FACTION DATA............... OK</span>
-    <span class="boot-line">SYSTEM READY.</span>
+    <span class="boot-line">LOADING WEAPON DATABASE............. OK</span>
+    <span class="boot-line">LOADING ARMOR CATALOG............... OK</span>
+    <span class="boot-line">LOADING PROVISIONS.................. OK</span>
+    <span class="boot-line">ALL MODULES VERIFIED.</span>
     <span class="boot-line">WELCOME, VAULT DWELLER. <span class="cursor"></span></span>
   </div>
 </div>
@@ -549,7 +553,7 @@ body::after {
       <div class="card-cta">CREATE CHARACTER <span class="cta-arrow">→</span></div>
     </a>
 
-    <!-- MODULE 03 — Armory -->
+    <!-- MODULE 03 — Armory (Weapons) -->
     <a class="tool-card" href="equipment.html">
       <div class="card-bg-glow"></div>
       <!-- Gun / crosshair SVG icon -->
@@ -578,7 +582,34 @@ body::after {
       <div class="card-cta">OPEN ARMORY <span class="cta-arrow">→</span></div>
     </a>
 
-    <!-- MODULE 04 — Provisions -->
+    <!-- MODULE 04 — Armor Vault (NEW) -->
+    <a class="tool-card" href="armor.html">
+      <div class="card-bg-glow"></div>
+      <!-- Armor / helmet SVG icon -->
+      <svg class="card-icon" viewBox="0 0 56 56" fill="none">
+        <path d="M28 8 L12 18 L12 32 Q12 42 28 48 Q44 42 44 32 L44 18 L28 8 Z" stroke="#f5a623" stroke-width="1.8" fill="rgba(245,166,35,0.06)"/>
+        <line x1="28" y1="20" x2="28" y2="40" stroke="#f5a623" stroke-width="1.2" opacity="0.6"/>
+        <line x1="20" y1="25" x2="36" y2="25" stroke="#f5a623" stroke-width="1.2" opacity="0.4"/>
+        <line x1="20" y1="32" x2="36" y2="32" stroke="#f5a623" stroke-width="1.2" opacity="0.4"/>
+        <circle cx="28" cy="28" r="6" stroke="#39ff14" stroke-width="1.2" fill="rgba(57,255,20,0.06)"/>
+        <path d="M20 48 L24 44 L32 44 L36 48" stroke="#f5a623" stroke-width="1.5" fill="none"/>
+        <circle cx="20" cy="22" r="2" fill="#f5a623" opacity="0.5"/>
+        <circle cx="36" cy="22" r="2" fill="#f5a623" opacity="0.5"/>
+      </svg>
+      <div class="card-label">Module 04</div>
+      <div class="card-title">Armor Vault</div>
+      <div class="card-desc">Complete armor database including clothing, power armor, and robot plating. Track resistances, mod slots, and armor upgrades.</div>
+      <ul class="card-features">
+        <li>Clothing, Outfits &amp; Headgear</li>
+        <li>Raider, Leather, Metal, Combat, Synth</li>
+        <li>Power Armor (T-45, T-51, T-60, X-01)</li>
+        <li>Robot &amp; Dog Armor</li>
+        <li>Full upgrade tables (Ballistic Weave, Material Mods, Power Armor Systems)</li>
+      </ul>
+      <div class="card-cta">OPEN ARMOR VAULT <span class="cta-arrow">→</span></div>
+    </a>
+
+    <!-- MODULE 05 — Provisions -->
     <a class="tool-card" href="consumables.html">
       <div class="card-bg-glow"></div>
       <!-- Nuka-Cola / bottle SVG icon -->
@@ -591,7 +622,7 @@ body::after {
         <circle cx="28" cy="38" r="2" fill="#39ff14" opacity="0.7"/>
         <rect x="22" y="28" width="12" height="2" rx="1" fill="#f5a623" opacity="0.3"/>
       </svg>
-      <div class="card-label">Module 04</div>
+      <div class="card-label">Module 05</div>
       <div class="card-title">Provisions</div>
       <div class="card-desc">Complete food &amp; beverage database. HP values, radiation status, special effects, and full addiction rules for alcohol.</div>
       <ul class="card-features">
@@ -637,8 +668,9 @@ setInterval(() => { if (document.querySelectorAll('.ember').length < 35) spawnEm
 document.addEventListener('keydown', e => {
   if (e.key==='1'||e.key==='r') window.location.href='rules.html';
   if (e.key==='2'||e.key==='c') window.location.href='fallout-char-creator.html';
-  if (e.key==='3'||e.key==='a') window.location.href='equipment.html';
-  if (e.key==='4'||e.key==='p') window.location.href='consumables.html';
+  if (e.key==='3'||e.key==='w') window.location.href='equipment.html';
+  if (e.key==='4'||e.key==='a') window.location.href='armor.html';
+  if (e.key==='5'||e.key==='p') window.location.href='consumables.html';
 });
 </script>
 </body>
