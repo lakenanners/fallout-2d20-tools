@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fallout 2D20 — Consumables</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@300;400;600;700&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root {
+  --amber:#f5a623; --amber-dim:#c47d0e; --amber-glow:rgba(245,166,35,0.1);
+  --green:#39ff14; --green-dim:#1a7a00; --green-pale:rgba(57,255,20,0.07);
+  --red:#e63232; --blue:#4ab3f4;
+  --rad:#9b59b6; --rad-pale:rgba(155,89,182,0.1);
+  --teal:#1abc9c; --teal-pale:rgba(26,188,156,0.08);
+  --orange:#e67e22; --orange-pale:rgba(230,126,34,0.08);
+  --dark:#060604; --darker:#030302;
+  --panel:#0f0f0c; --panel2:#161610; --panel3:#1d1d16;
+  --border:rgba(245,166,35,0.2);
+  --text:#d4c4a0; --text-dim:#8a7a5a; --text-bright:#ede0c0;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{background:var(--darker);color:var(--text);font-family:'Share Tech Mono',monospace;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px);pointer-events:none;z-index:9999}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.55) 100%);pointer-events:none;z-index:9998}
+
+/* HEADER */
+#header{position:sticky;top:0;z-index:500;background:var(--panel);border-bottom:2px solid var(--amber);box-shadow:0 0 40px rgba(245,166,35,0.15);padding:0 1.5rem;display:flex;align-items:center;gap:1rem;height:58px}
+.hdr-pip{width:36px;height:36px;flex-shrink:0}
+.hdr-title{font-family:'Oswald',sans-serif;font-size:1.3rem;font-weight:700;color:var(--amber);letter-spacing:4px;text-transform:uppercase;text-shadow:0 0 15px rgba(245,166,35,0.35);line-height:1}
+.hdr-sub{font-size:0.58rem;color:var(--text-dim);letter-spacing:3px;margin-top:2px}
+.hdr-nav{display:flex;gap:0.4rem;margin-left:auto;flex-wrap:wrap}
+.hdr-link{font-family:'Share Tech Mono',monospace;font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;padding:0.3rem 0.7rem;border:1px solid var(--border);color:var(--text-dim);text-decoration:none;transition:all 0.15s;background:transparent;cursor:pointer}
+.hdr-link:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+
+/* CATEGORY TABS */
+#cat-bar{background:var(--panel2);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
+#cat-bar::-webkit-scrollbar{display:none}
+.cat-tab{display:flex;align-items:center;gap:0.45rem;padding:0.7rem 1.1rem;font-family:'Oswald',sans-serif;font-size:0.72rem;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;border-top:none;border-left:none;border-right:none;background:transparent;transition:all 0.15s;flex-shrink:0;margin-bottom:-1px}
+.cat-tab:hover{color:var(--amber)}
+.cat-tab.active{color:var(--amber);border-bottom-color:var(--amber);background:var(--amber-glow)}
+.cat-count{background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.25);font-size:0.58rem;padding:0.05rem 0.3rem;color:var(--amber);font-family:'Share Tech Mono',monospace}
+
+/* TOOLBAR */
+#toolbar{background:var(--panel);border-bottom:1px solid rgba(245,166,35,0.07);padding:0.7rem 1.5rem;display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap}
+#search-box{background:var(--panel2);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:0.4rem 0.8rem;outline:none;transition:border-color 0.15s;width:220px}
+#search-box:focus{border-color:var(--amber);box-shadow:0 0 10px rgba(245,166,35,0.1)}
+#search-box::placeholder{color:var(--text-dim)}
+.filter-select{background:var(--panel2);border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:0.72rem;padding:0.4rem 0.7rem;outline:none;cursor:pointer;appearance:none;min-width:140px}
+.filter-select:focus{border-color:var(--amber);color:var(--text)}
+.filter-select option{background:var(--panel2);color:var(--text)}
+.result-count{font-size:0.68rem;color:var(--text-dim);letter-spacing:2px;margin-left:auto}
+.result-count span{color:var(--amber)}
+.view-toggle{display:flex;gap:0.3rem}
+.view-btn{width:32px;height:32px;background:transparent;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.75rem;transition:all 0.15s}
+.view-btn:hover,.view-btn.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+
+/* LAYOUT */
+#main{display:flex;min-height:calc(100vh - 150px)}
+#sidebar{width:240px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;height:calc(100vh - 150px);position:sticky;top:150px}
+.sb-section{border-bottom:1px solid rgba(245,166,35,0.07)}
+.sb-heading{font-family:'Oswald',sans-serif;font-size:0.58rem;letter-spacing:4px;color:var(--amber);opacity:0.6;padding:0.8rem 1rem 0.3rem;text-transform:uppercase}
+.sb-link{display:flex;align-items:center;justify-content:space-between;padding:0.38rem 1rem 0.38rem 1.4rem;color:var(--text-dim);font-size:0.75rem;cursor:pointer;border-left:2px solid transparent;transition:all 0.12s}
+.sb-link:hover{color:var(--amber);border-left-color:var(--amber);background:var(--amber-glow);padding-left:1.7rem}
+.sb-link.active{color:var(--amber);border-left-color:var(--amber);background:var(--amber-glow)}
+.sb-badge{font-size:0.6rem;color:var(--text-dim);background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.15);padding:0.05rem 0.3rem}
+.legend-row{display:flex;align-items:center;gap:0.5rem;padding:0.25rem 1rem;font-size:0.68rem;color:var(--text-dim)}
+.legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* CONTENT */
+#content{flex:1;overflow-y:auto;padding:1.5rem 1.8rem}
+.cat-header{margin-bottom:1rem;padding-bottom:0.8rem;border-bottom:1px solid var(--border)}
+.cat-title{font-family:'Oswald',sans-serif;font-size:2rem;font-weight:700;color:var(--amber);letter-spacing:4px;text-transform:uppercase;text-shadow:0 0 20px rgba(245,166,35,0.25);line-height:1}
+.cat-desc{font-size:0.76rem;color:var(--text-dim);line-height:1.65;margin-top:0.6rem;max-width:740px;letter-spacing:0.3px}
+
+/* RULE BOXES */
+.rule-box{background:var(--panel2);border:1px solid var(--border);border-left:3px solid var(--amber);padding:0.7rem 1rem;font-size:0.76rem;line-height:1.65;color:var(--text-dim);margin:0.8rem 0 1.4rem;max-width:780px}
+.rule-box strong{color:var(--amber)}
+.rule-box .rule-title{font-family:'Oswald',sans-serif;font-size:0.62rem;letter-spacing:3px;color:var(--amber);text-transform:uppercase;margin-bottom:0.35rem}
+.rule-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;max-width:780px;margin:0.8rem 0 1.4rem}
+@media(max-width:600px){.rule-grid{grid-template-columns:1fr}}
+
+/* SPECIAL RULE BOX (max HP) */
+.maxhp-box{background:var(--panel2);border:1px solid rgba(57,255,20,0.2);border-left:3px solid var(--green);padding:0.7rem 1rem;font-size:0.75rem;line-height:1.65;color:var(--text-dim);margin:1.2rem 0;max-width:780px}
+.maxhp-box strong{color:var(--green)}
+.maxhp-box .rule-title{font-family:'Oswald',sans-serif;font-size:0.62rem;letter-spacing:3px;color:var(--green);text-transform:uppercase;margin-bottom:0.35rem}
+
+/* TABLE */
+.items-table-wrap{overflow-x:auto;margin-bottom:2rem}
+.items-table{width:100%;border-collapse:collapse;font-size:0.75rem;min-width:700px}
+.items-table th{background:rgba(245,166,35,0.09);color:var(--amber);font-family:'Oswald',sans-serif;font-size:0.63rem;letter-spacing:2px;padding:0.5rem 0.7rem;border:1px solid var(--border);text-align:left;text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none}
+.items-table th:hover{background:rgba(245,166,35,0.14)}
+.items-table th .sa{margin-left:4px;opacity:0.4;font-size:0.58rem}
+.items-table th.sorted .sa{opacity:1;color:var(--green)}
+.items-table td{padding:0.45rem 0.7rem;border:1px solid rgba(245,166,35,0.07);vertical-align:middle}
+.items-table tr{cursor:pointer}
+.items-table tr:hover td{background:var(--amber-glow)}
+.items-table tr.expanded td{background:rgba(245,166,35,0.05);border-bottom-color:transparent}
+.iname{font-family:'Oswald',sans-serif;font-size:0.82rem;color:var(--text-bright);letter-spacing:1px;text-transform:uppercase}
+.hp-val{font-family:'VT323',monospace;font-size:1.3rem;line-height:1;color:var(--green)}
+.hp-val.zero{color:var(--text-dim)}
+.rad-badge{display:inline-block;font-size:0.58rem;letter-spacing:1px;padding:0.1rem 0.35rem;border:1px solid;text-transform:uppercase;font-family:'Oswald',sans-serif}
+.rad-yes{color:var(--rad);border-color:rgba(155,89,182,0.4);background:var(--rad-pale)}
+.rad-no{color:var(--text-dim);border-color:rgba(255,255,255,0.08);background:rgba(255,255,255,0.02)}
+.alc-badge{display:inline-block;font-size:0.58rem;letter-spacing:1px;padding:0.1rem 0.35rem;border:1px solid rgba(230,126,34,0.45);color:var(--orange);background:var(--orange-pale);font-family:'Oswald',sans-serif;text-transform:uppercase}
+.effects-cell{font-size:0.7rem;color:var(--text-dim);line-height:1.45;max-width:280px}
+.eff-tag{display:inline-block;font-size:0.58rem;padding:0.05rem 0.3rem;border:1px solid rgba(57,255,20,0.3);color:var(--green);background:var(--green-pale);margin:0.1rem 0.1rem 0.1rem 0;white-space:nowrap}
+.eff-tag.ap-tag{border-color:rgba(245,166,35,0.4);color:var(--amber);background:var(--amber-glow)}
+.rarity{display:flex;gap:2px;align-items:center}
+.rarity-pip{width:7px;height:7px;border-radius:1px;border:1px solid rgba(245,166,35,0.25);background:transparent}
+.rarity-pip.filled{background:var(--amber);border-color:var(--amber)}
+.cost-val{font-family:'Oswald',sans-serif;font-size:0.82rem;color:var(--amber);letter-spacing:1px}
+
+/* EXPANDED ROW */
+.detail-row td{padding:0!important;border-top:none!important;background:var(--panel3)!important}
+.detail-inner{padding:1rem 1.2rem 1.2rem;border:1px solid rgba(245,166,35,0.15);border-top:2px solid var(--amber);display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+@media(max-width:700px){.detail-inner{grid-template-columns:1fr}}
+.d-title{font-family:'Oswald',sans-serif;font-size:0.6rem;letter-spacing:4px;color:var(--amber);opacity:0.65;text-transform:uppercase;border-bottom:1px solid rgba(245,166,35,0.1);padding-bottom:0.3rem;margin-bottom:0.6rem}
+.d-row{display:flex;justify-content:space-between;font-size:0.75rem;padding:0.2rem 0;border-bottom:1px solid rgba(245,166,35,0.05)}
+.d-row .key{color:var(--text-dim)}
+.d-row .val{color:var(--text-bright);font-family:'Oswald',sans-serif;letter-spacing:1px;font-size:0.78rem}
+.d-effects{font-size:0.76rem;color:var(--text);line-height:1.65}
+.d-rules{font-size:0.73rem;color:var(--text-dim);line-height:1.65;margin-top:0.5rem}
+.d-rules strong{color:var(--amber)}
+
+/* CARD VIEW */
+.items-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:0.7rem;margin-bottom:2rem}
+.item-card{background:var(--panel2);border:1px solid var(--border);padding:0.9rem 1rem;cursor:pointer;transition:all 0.15s;position:relative}
+.item-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:transparent;transition:background 0.15s}
+.item-card:hover{border-color:rgba(245,166,35,0.4)}
+.item-card:hover::before{background:var(--amber)}
+.item-card.selected{border-color:var(--amber)}
+.item-card.selected::before{background:var(--amber)}
+.ic-name{font-family:'Oswald',sans-serif;font-size:0.88rem;color:var(--text-bright);letter-spacing:1px;text-transform:uppercase;margin-bottom:0.3rem;line-height:1.2}
+.ic-badges{display:flex;gap:0.3rem;flex-wrap:wrap;margin-bottom:0.5rem}
+.ic-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.3rem;margin-bottom:0.5rem}
+.ic-stat{background:var(--panel3);text-align:center;padding:0.25rem;border:1px solid rgba(245,166,35,0.07)}
+.ic-stat-val{font-family:'VT323',monospace;font-size:1.25rem;line-height:1}
+.ic-stat-label{font-size:0.5rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase}
+.ic-effects{font-size:0.68rem;color:var(--text-dim);line-height:1.5;margin-top:0.3rem}
+
+/* MISC */
+.no-results{text-align:center;padding:3rem 1rem;color:var(--text-dim);font-size:0.8rem;letter-spacing:2px}
+.no-results .big{font-family:'VT323',monospace;font-size:3rem;color:rgba(245,166,35,0.2);display:block;margin-bottom:0.5rem}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--darker)}
+::-webkit-scrollbar-thumb{background:var(--amber-dim)}
+.sec-div{border:none;border-top:1px solid rgba(245,166,35,0.1);margin:1.5rem 0}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <svg class="hdr-pip" viewBox="0 0 38 38" fill="none">
+    <rect x="2" y="5" width="34" height="28" rx="3" stroke="#f5a623" stroke-width="1.8" fill="none"/>
+    <rect x="5" y="8" width="16" height="12" rx="1" fill="#060604" stroke="#39ff14" stroke-width="1.2"/>
+    <circle cx="13" cy="14" r="3" stroke="#39ff14" stroke-width="1.2" fill="none"/>
+    <circle cx="13" cy="14" r="1" fill="#39ff14"/>
+    <rect x="23" y="9" width="9" height="1.8" rx="0.9" fill="#f5a623"/>
+    <rect x="23" y="13" width="7" height="1.8" rx="0.9" fill="#f5a623" opacity="0.5"/>
+    <rect x="23" y="17" width="9" height="1.8" rx="0.9" fill="#f5a623"/>
+    <rect x="5" y="23" width="4" height="4" rx="2" fill="#39ff14"/>
+    <rect x="11" y="23" width="4" height="4" rx="2" fill="#39ff14" opacity="0.3"/>
+    <rect x="17" y="23" width="4" height="4" rx="2" fill="#39ff14" opacity="0.3"/>
+  </svg>
+  <div>
+    <div class="hdr-title">CONSUMABLES</div>
+    <div class="hdr-sub">FALLOUT 2D20 // MODIPHIUS ENTERTAINMENT // WASTELAND PROVISIONS DATABASE</div>
+  </div>
+  <div class="hdr-nav">
+    <a class="hdr-link" href="index.html">⌂ HOME</a>
+    <a class="hdr-link" href="rules.html">FIELD MANUAL</a>
+    <a class="hdr-link" href="fallout-char-creator.html">CHAR. CREATOR</a>
+    <a class="hdr-link" href="equipment.html">ARMORY</a>
+  </div>
+</div>
+
+<!-- CATEGORY TABS -->
+<div id="cat-bar">
+  <button class="cat-tab active" onclick="showCat('all')">ALL <span class="cat-count" id="cnt-all">0</span></button>
+  <button class="cat-tab" onclick="showCat('food')">🍖 FOOD <span class="cat-count" id="cnt-food">0</span></button>
+  <button class="cat-tab" onclick="showCat('beverages')">🍶 BEVERAGES <span class="cat-count" id="cnt-beverages">0</span></button>
+</div>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <input type="text" id="search-box" placeholder="⌕  Search consumables…" oninput="filter()">
+  <select class="filter-select" id="f-irr" onchange="filter()">
+    <option value="">All Items</option>
+    <option value="yes">Irradiated Only</option>
+    <option value="no">Non-Irradiated Only</option>
+  </select>
+  <select class="filter-select" id="f-tag" onchange="filter()">
+    <option value="">All Effects</option>
+    <option value="ap">Grants AP</option>
+    <option value="alcoholic">Alcoholic</option>
+    <option value="heals_rad">Heals Radiation</option>
+    <option value="rad_resist">Rad Resistance</option>
+    <option value="dmg_resist">Damage Resistance</option>
+    <option value="max_hp">Increases Max HP</option>
+    <option value="group_ap">Group AP Boost</option>
+    <option value="str_boost">STR Test Boost</option>
+    <option value="end_boost">END Test Boost</option>
+    <option value="per_boost">PER Test Boost</option>
+    <option value="agi_boost">AGI Test Boost</option>
+    <option value="cures_addic">Cures Addictions</option>
+  </select>
+  <select class="filter-select" id="f-rar" onchange="filter()">
+    <option value="">All Rarities</option>
+    <option value="0">Common (0)</option>
+    <option value="1">Uncommon (1)</option>
+    <option value="2">Rare (2)</option>
+    <option value="3">Very Rare (3)</option>
+    <option value="4">Exceptional (4)</option>
+    <option value="5">Legendary (5)</option>
+  </select>
+  <div class="view-toggle">
+    <button class="view-btn active" id="btn-tbl" onclick="setView('table')" title="Table">☰</button>
+    <button class="view-btn" id="btn-crd" onclick="setView('cards')" title="Cards">⊞</button>
+  </div>
+  <div class="result-count">SHOWING <span id="shown-count">0</span> ITEMS</div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="sidebar">
+    <div class="sb-section">
+      <div class="sb-heading">Categories</div>
+      <div class="sb-link active" onclick="showCat('all')">All Consumables <span class="sb-badge" id="sb-all">0</span></div>
+      <div class="sb-link" onclick="showCat('food')">Food <span class="sb-badge" id="sb-food">0</span></div>
+      <div class="sb-link" onclick="showCat('beverages')">Beverages <span class="sb-badge" id="sb-beverages">0</span></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-heading">Legend</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--green)"></div>HP Healed</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--rad)"></div>Irradiated (1 DC roll)</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--orange)"></div>Alcoholic</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--amber)"></div>Grants AP</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--teal)"></div>Special Effect</div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-heading">Quick Rules</div>
+      <div style="padding:0.6rem 1rem;font-size:0.67rem;color:var(--text-dim);line-height:1.7">
+        <div style="margin-bottom:0.4rem"><span style="color:var(--amber)">Food:</span> 1 per scene. Not in combat.</div>
+        <div style="margin-bottom:0.4rem"><span style="color:var(--amber)">Beverages:</span> 1 per scene. Major Action in combat.</div>
+        <div style="margin-bottom:0.4rem"><span style="color:var(--orange)">Alcoholic:</span> Reroll 1d20 STR/CHA. +1 diff INT. Risk addiction.</div>
+        <div><span style="color:var(--rad)">Irradiated:</span> Roll 1 DC. On Effect ★ = 1 Rad dmg, ignores armor.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="content">
+    <div id="items-output"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════
+// DATA — corrected from clean PDF scan
+// ═══════════════════════════════════
+
+const ITEMS = [
+  // ── FOOD ──
+  // { id, cat, name, hp, effects, irradiated, weight, cost, rarity, tags[] }
+  { id:'baked_bloatfly',      cat:'food', name:'Baked Bloatfly',             hp:6,  effects:'+2 Radiation damage resistance',                                                    irradiated:false, weight:'<1', cost:15,  rarity:1, tags:['rad_resist'] },
+  { id:'blamco_mac',          cat:'food', name:'BlamCo Brand Mac and Cheese',hp:4,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:10,  rarity:1, tags:[] },
+  { id:'bloatfly_meat',       cat:'food', name:'Bloatfly Meat',              hp:2,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:8,   rarity:0, tags:[] },
+  { id:'bloodbug_meat',       cat:'food', name:'Bloodbug Meat',              hp:7,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:8,   rarity:1, tags:[] },
+  { id:'bloodbug_steak',      cat:'food', name:'Bloodbug Steak',             hp:10, effects:'Max HP +3 until end of following scene',                                           irradiated:false, weight:'<1', cost:18,  rarity:2, tags:['max_hp'] },
+  { id:'brahmin_meat',        cat:'food', name:'Brahmin Meat',               hp:3,  effects:'—',                                                                                irradiated:true,  weight:1,    cost:28,  rarity:1, tags:[] },
+  { id:'brain_fungus',        cat:'food', name:'Brain Fungus',               hp:3,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:6,   rarity:1, tags:[] },
+  { id:'canned_dog_food',     cat:'food', name:'Canned Dog Food',            hp:3,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:6,   rarity:0, tags:[] },
+  { id:'carrot',              cat:'food', name:'Carrot',                     hp:3,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:3,   rarity:1, tags:[] },
+  { id:'cooked_softshell',    cat:'food', name:'Cooked Softshell Meat',      hp:9,  effects:'Gain +1 AP at start of next scene',                                                irradiated:false, weight:'<1', cost:40,  rarity:3, tags:['ap'] },
+  { id:'corn',                cat:'food', name:'Corn',                       hp:3,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:6,   rarity:1, tags:[] },
+  { id:'cram',                cat:'food', name:'Cram',                       hp:5,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:25,  rarity:1, tags:[] },
+  { id:'crispy_squirrel',     cat:'food', name:'Crispy Squirrel Bits',       hp:6,  effects:'—',                                                                                irradiated:false, weight:'<1', cost:6,   rarity:2, tags:[] },
+  { id:'dandy_apples',        cat:'food', name:'Dandy Boy Apples',           hp:3,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:7,   rarity:0, tags:[] },
+  { id:'deathclaw_egg',       cat:'food', name:'Deathclaw Egg',              hp:7,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:69,  rarity:3, tags:[] },
+  { id:'deathclaw_meat',      cat:'food', name:'Deathclaw Meat',             hp:9,  effects:'—',                                                                                irradiated:true,  weight:1,    cost:110, rarity:3, tags:[] },
+  { id:'deathclaw_omelette',  cat:'food', name:'Deathclaw Omelette',         hp:11, effects:'If next scene is combat, regain 1 HP at the start of each turn',                   irradiated:false, weight:'<1', cost:80,  rarity:4, tags:[] },
+  { id:'deathclaw_steak',     cat:'food', name:'Deathclaw Steak',            hp:14, effects:'May re-roll 1d20 on all STR tests until end of next scene',                        irradiated:false, weight:1,    cost:130, rarity:4, tags:['str_boost'] },
+  { id:'fancy_lads',          cat:'food', name:'Fancy Lads Snack Cakes',     hp:3,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:18,  rarity:0, tags:[] },
+  { id:'food_paste',          cat:'food', name:'Food Paste',                 hp:7,  effects:'May re-roll 1d20 on all END tests until end of next scene',                        irradiated:false, weight:'<1', cost:0,   rarity:2, tags:['end_boost'] },
+  { id:'gourd',               cat:'food', name:'Gourd',                      hp:3,  effects:'—',                                                                                irradiated:true,  weight:1,    cost:6,   rarity:1, tags:[] },
+  { id:'grilled_radroach',    cat:'food', name:'Grilled Radroach',           hp:5,  effects:'—',                                                                                irradiated:false, weight:'<1', cost:7,   rarity:1, tags:[] },
+  { id:'grilled_radstag',     cat:'food', name:'Grilled Radstag',            hp:11, effects:'Carry weight increases by +25 until end of next scene',                            irradiated:false, weight:1,    cost:60,  rarity:2, tags:[] },
+  { id:'gum_drops',           cat:'food', name:'Gum Drops',                  hp:3,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:5,   rarity:0, tags:[] },
+  { id:'iguana_bits',         cat:'food', name:'Iguana Bits',                hp:4,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:8,   rarity:1, tags:[] },
+  { id:'iguana_on_stick',     cat:'food', name:'Iguana on a Stick',          hp:6,  effects:'—',                                                                                irradiated:false, weight:'<1', cost:33,  rarity:2, tags:[] },
+  { id:'iguana_soup',         cat:'food', name:'Iguana Soup',                hp:10, effects:'—',                                                                                irradiated:false, weight:1,    cost:21,  rarity:3, tags:[] },
+  { id:'instamash',           cat:'food', name:'InstaMash',                  hp:4,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:20,  rarity:0, tags:[] },
+  { id:'inst_food_packet',    cat:'food', name:'Institute Food Packet',      hp:5,  effects:'—',                                                                                irradiated:false, weight:'<1', cost:10,  rarity:2, tags:[] },
+  { id:'melon',               cat:'food', name:'Melon',                      hp:3,  effects:'—',                                                                                irradiated:true,  weight:1,    cost:6,   rarity:1, tags:[] },
+  { id:'mirelurk_cake',       cat:'food', name:'Mirelurk Cake',              hp:12, effects:'Can breathe underwater until end of next scene',                                   irradiated:false, weight:'<1', cost:35,  rarity:3, tags:[] },
+  { id:'mirelurk_egg',        cat:'food', name:'Mirelurk Egg',               hp:3,  effects:'—',                                                                                irradiated:true,  weight:1,    cost:0,   rarity:2, tags:[] },
+  { id:'mirelurk_egg_omel',   cat:'food', name:'Mirelurk Egg Omelette',      hp:7,  effects:'Immediately add 2 AP to the group pool',                                          irradiated:false, weight:'<1', cost:30,  rarity:3, tags:['ap','group_ap'] },
+  { id:'mirelurk_meat',       cat:'food', name:'Mirelurk Meat',              hp:6,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:18,  rarity:1, tags:[] },
+  { id:'mirelurk_queen_steak',cat:'food', name:'Mirelurk Queen Steak',       hp:14, effects:'Reduce the difficulty of all END tests by 1 until the end of the next scene',     irradiated:false, weight:1,    cost:130, rarity:5, tags:['end_boost'] },
+  { id:'mole_rat_chunks',     cat:'food', name:'Mole Rat Chunks',            hp:7,  effects:'+1 Maximum AP in group pool until the end of the current scene',                  irradiated:false, weight:'<1', cost:8,   rarity:1, tags:['group_ap'] },
+  { id:'mole_rat_meat',       cat:'food', name:'Mole Rat Meat',              hp:5,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:5,   rarity:0, tags:[] },
+  { id:'mongrel_meat',        cat:'food', name:'Mongrel Dog Meat',           hp:4,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:8,   rarity:0, tags:[] },
+  { id:'mutant_hound_chops',  cat:'food', name:'Mutant Hound Chops',         hp:8,  effects:'Heals 2 Radiation damage',                                                        irradiated:false, weight:'<1', cost:12,  rarity:3, tags:['heals_rad'] },
+  { id:'mutant_hound_meat',   cat:'food', name:'Mutant Hound Meat',          hp:5,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:8,   rarity:2, tags:[] },
+  { id:'mutfruit',            cat:'food', name:'Mutfruit',                   hp:3,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:8,   rarity:0, tags:[] },
+  { id:'mutt_chops',          cat:'food', name:'Mutt Chops',                 hp:6,  effects:'—',                                                                                irradiated:false, weight:'<1', cost:12,  rarity:1, tags:[] },
+  { id:'noodle_cup',          cat:'food', name:'Noodle Cup',                 hp:6,  effects:'—',                                                                                irradiated:false, weight:'<1', cost:20,  rarity:2, tags:[] },
+  { id:'pres_pie',            cat:'food', name:'Perfectly Preserved Pie',    hp:5,  effects:'—',                                                                                irradiated:false, weight:'<1', cost:20,  rarity:3, tags:[] },
+  { id:'pork_n_beans',        cat:'food', name:"Pork 'n' Beans",             hp:4,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:10,  rarity:0, tags:[] },
+  { id:'potato_crisps',       cat:'food', name:'Potato Crisps',              hp:3,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:7,   rarity:0, tags:[] },
+  { id:'potted_meat',         cat:'food', name:'Potted Meat',                hp:6,  effects:'Roll 2 DC rather than 1 when determining Radiation damage when consumed',          irradiated:true,  weight:1,    cost:25,  rarity:0, tags:[] },
+  { id:'queen_mirelurk_meat', cat:'food', name:'Queen Mirelurk Meat',        hp:10, effects:'May re-roll 1d20 on all END tests until end of next scene',                        irradiated:true,  weight:'<1', cost:22,  rarity:4, tags:['end_boost'] },
+  { id:'radroach_meat',       cat:'food', name:'Radroach Meat',              hp:4,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:3,   rarity:0, tags:[] },
+  { id:'radscorpion_egg',     cat:'food', name:'Radscorpion Egg',            hp:6,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:48,  rarity:3, tags:[] },
+  { id:'radscorpion_egg_omel',cat:'food', name:'Radscorpion Egg Omelette',   hp:9,  effects:'Cure all addictions',                                                             irradiated:false, weight:'<1', cost:65,  rarity:4, tags:['cures_addic'] },
+  { id:'radscorpion_meat',    cat:'food', name:'Radscorpion Meat',           hp:9,  effects:'—',                                                                                irradiated:true,  weight:1,    cost:55,  rarity:2, tags:[] },
+  { id:'radscorpion_steak',   cat:'food', name:'Radscorpion Steak',          hp:12, effects:'+2 Energy damage resistance until end of next scene',                             irradiated:false, weight:1,    cost:65,  rarity:3, tags:['dmg_resist'] },
+  { id:'radstag_meat',        cat:'food', name:'Radstag Meat',               hp:8,  effects:'—',                                                                                irradiated:true,  weight:1,    cost:50,  rarity:1, tags:[] },
+  { id:'radstag_stew',        cat:'food', name:'Radstag Stew',               hp:12, effects:'+3 Energy damage resistance until end of next scene',                             irradiated:false, weight:1,    cost:60,  rarity:3, tags:['dmg_resist'] },
+  { id:'razorgrain',          cat:'food', name:'Razorgrain',                 hp:3,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:5,   rarity:1, tags:[] },
+  { id:'ribeye_steak',        cat:'food', name:'Ribeye Steak',               hp:10, effects:'—',                                                                                irradiated:false, weight:1,    cost:40,  rarity:2, tags:[] },
+  { id:'roasted_mirelurk',    cat:'food', name:'Roasted Mirelurk Meat',      hp:8,  effects:'Gain +1 AP at start of next scene',                                               irradiated:false, weight:'<1', cost:40,  rarity:2, tags:['ap'] },
+  { id:'salisbury_steak',     cat:'food', name:'Salisbury Steak',            hp:5,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:20,  rarity:0, tags:[] },
+  { id:'silt_bean',           cat:'food', name:'Silt Bean',                  hp:3,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:6,   rarity:1, tags:[] },
+  { id:'softshell_mirelurk',  cat:'food', name:'Softshell Mirelurk Meat',    hp:6,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:22,  rarity:2, tags:[] },
+  { id:'squirrel_bits',       cat:'food', name:'Squirrel Bits',              hp:4,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:4,   rarity:1, tags:[] },
+  { id:'squirrel_on_stick',   cat:'food', name:'Squirrel on a Stick',        hp:7,  effects:'—',                                                                                irradiated:false, weight:'<1', cost:15,  rarity:2, tags:[] },
+  { id:'squirrel_stew',       cat:'food', name:'Squirrel Stew',              hp:10, effects:'—',                                                                                irradiated:false, weight:1,    cost:24,  rarity:2, tags:[] },
+  { id:'stingwing_filet',     cat:'food', name:'Stingwing Filet',            hp:11, effects:'May re-roll 1d20 on all PER tests until end of next scene',                        irradiated:false, weight:'<1', cost:35,  rarity:2, tags:['per_boost'] },
+  { id:'stingwing_meat',      cat:'food', name:'Stingwing Meat',             hp:8,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:30,  rarity:1, tags:[] },
+  { id:'sugar_bombs',         cat:'food', name:'Sugar Bombs',                hp:4,  effects:'Gain +1 AP at start of next scene',                                               irradiated:true,  weight:'<1', cost:11,  rarity:0, tags:['ap'] },
+  { id:'sweet_roll',          cat:'food', name:'Sweet Roll',                 hp:4,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:9,   rarity:1, tags:[] },
+  { id:'tarberry',            cat:'food', name:'Tarberry',                   hp:3,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:5,   rarity:3, tags:[] },
+  { id:'tato',                cat:'food', name:'Tato',                       hp:3,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:7,   rarity:1, tags:[] },
+  { id:'vegetable_soup',      cat:'food', name:'Vegetable Soup',             hp:7,  effects:'+2 Radiation damage resistance until end of next scene',                          irradiated:false, weight:1,    cost:13,  rarity:2, tags:['rad_resist'] },
+  { id:'yao_guai_meat',       cat:'food', name:'Yao Guai Meat',              hp:9,  effects:'—',                                                                                irradiated:true,  weight:1,    cost:85,  rarity:3, tags:[] },
+  { id:'yao_guai_ribs',       cat:'food', name:'Yao Guai Ribs',              hp:13, effects:'+2 Physical damage resistance until end of next scene',                           irradiated:false, weight:1,    cost:90,  rarity:4, tags:['dmg_resist'] },
+  { id:'yao_guai_roast',      cat:'food', name:'Yao Guai Roast',             hp:14, effects:'+2 DC to melee attacks until end of next scene',                                  irradiated:false, weight:1,    cost:110, rarity:4, tags:[] },
+  { id:'yum_deviled_eggs',    cat:'food', name:'Yum-Yum Deviled Eggs',       hp:4,  effects:'—',                                                                                irradiated:true,  weight:'<1', cost:20,  rarity:0, tags:[] },
+
+  // ── BEVERAGES ──
+  { id:'beer',              cat:'beverages', name:'Beer',                  hp:0,  effects:'Alcoholic',                                                                                                                          irradiated:false, weight:1,    cost:5,   rarity:1, tags:['alcoholic'] },
+  { id:'blood_pack',        cat:'beverages', name:'Blood Pack',            hp:3,  effects:'—',                                                                                                                                  irradiated:false, weight:'<1', cost:10,  rarity:2, tags:[] },
+  { id:'bourbon',           cat:'beverages', name:'Bourbon',               hp:0,  effects:'Alcoholic; additionally reroll 1d20 on END tests',                                                                                  irradiated:false, weight:1,    cost:7,   rarity:2, tags:['alcoholic','end_boost'] },
+  { id:'brahmin_milk',      cat:'beverages', name:'Brahmin Milk',          hp:1,  effects:'Heals 2 Radiation damage',                                                                                                          irradiated:false, weight:'<1', cost:15,  rarity:2, tags:['heals_rad'] },
+  { id:'dirty_wastelander', cat:'beverages', name:'Dirty Wastelander',     hp:0,  effects:'Alcoholic; reduce difficulty of all STR tests by 1 and increase difficulty of all INT tests by 2 (in total)',                      irradiated:false, weight:1,    cost:10,  rarity:3, tags:['alcoholic','str_boost'] },
+  { id:'dirty_water',       cat:'beverages', name:'Dirty Water',           hp:2,  effects:'—',                                                                                                                                  irradiated:true,  weight:'<1', cost:5,   rarity:0, tags:[] },
+  { id:'glowing_blood_pack',cat:'beverages', name:'Glowing Blood Pack',    hp:4,  effects:'+5 to Radiation damage resistance',                                                                                                 irradiated:false, weight:'<1', cost:30,  rarity:3, tags:['rad_resist'] },
+  { id:'irradiated_blood',  cat:'beverages', name:'Irradiated Blood',      hp:3,  effects:'Roll 2 DC rather than 1 when determining Radiation damage when consumed',                                                           irradiated:true,  weight:'<1', cost:50,  rarity:2, tags:[] },
+  { id:'melon_juice',       cat:'beverages', name:'Melon Juice',           hp:3,  effects:'Heal 1 HP at the start of each turn',                                                                                               irradiated:false, weight:'<1', cost:6,   rarity:2, tags:[] },
+  { id:'moonshine',         cat:'beverages', name:'Moonshine',             hp:0,  effects:'Alcoholic; +2 Max HP',                                                                                                              irradiated:false, weight:'<1', cost:30,  rarity:3, tags:['alcoholic','max_hp'] },
+  { id:'mutfruit_juice',    cat:'beverages', name:'Mutfruit Juice',        hp:3,  effects:'Reroll 1d20 on all AGI tests',                                                                                                      irradiated:false, weight:'<1', cost:8,   rarity:2, tags:['agi_boost'] },
+  { id:'nuka_cherry',       cat:'beverages', name:'Nuka-Cherry',           hp:3,  effects:'Immediately gain +2 AP',                                                                                                            irradiated:true,  weight:1,    cost:40,  rarity:3, tags:['ap'] },
+  { id:'nuka_cola',         cat:'beverages', name:'Nuka-Cola',             hp:2,  effects:'Immediately gain +1 AP',                                                                                                            irradiated:true,  weight:1,    cost:20,  rarity:2, tags:['ap'] },
+  { id:'nuka_quantum',      cat:'beverages', name:'Nuka-Cola Quantum',     hp:10, effects:'Immediately gain +5 AP',                                                                                                            irradiated:true,  weight:1,    cost:50,  rarity:5, tags:['ap'] },
+  { id:'purified_water',    cat:'beverages', name:'Purified Water',        hp:3,  effects:'—',                                                                                                                                  irradiated:false, weight:'<1', cost:20,  rarity:1, tags:[] },
+  { id:'refreshing_bev',    cat:'beverages', name:'Refreshing Beverage',   hp:11, effects:'Heals 10 Radiation damage; cures all addictions',                                                                                   irradiated:false, weight:1,    cost:110, rarity:5, tags:['heals_rad','cures_addic'] },
+  { id:'rum',               cat:'beverages', name:'Rum',                   hp:0,  effects:'Alcoholic; reroll 1d20 on AGI tests',                                                                                               irradiated:false, weight:1,    cost:8,   rarity:2, tags:['alcoholic','agi_boost'] },
+  { id:'tarberry_juice',    cat:'beverages', name:'Tarberry Juice',        hp:3,  effects:'Immediately gain +6 AP',                                                                                                            irradiated:false, weight:'<1', cost:5,   rarity:4, tags:['ap'] },
+  { id:'tato_juice',        cat:'beverages', name:'Tato Juice',            hp:3,  effects:'Group AP pool can hold 1 AP more than normal',                                                                                      irradiated:false, weight:'<1', cost:7,   rarity:3, tags:['group_ap'] },
+  { id:'vodka',             cat:'beverages', name:'Vodka',                 hp:2,  effects:'Alcoholic',                                                                                                                          irradiated:false, weight:1,    cost:5,   rarity:3, tags:['alcoholic'] },
+  { id:'whiskey',           cat:'beverages', name:'Whiskey',               hp:0,  effects:'Alcoholic; reroll up to two d20 on STR tests (in total)',                                                                           irradiated:false, weight:1,    cost:5,   rarity:3, tags:['alcoholic','str_boost'] },
+  { id:'wine',              cat:'beverages', name:'Wine',                  hp:0,  effects:'Alcoholic; immediately gain +1 AP',                                                                                                 irradiated:false, weight:1,    cost:5,   rarity:3, tags:['alcoholic','ap'] },
+];
+
+// ═══════════════════════════════════
+// STATE
+// ═══════════════════════════════════
+
+let cat = 'all', view = 'table', sortKey = 'name', sortDir = 1, expanded = null;
+
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+
+function init() {
+  const cats = ['food','beverages'];
+  let total = 0;
+  cats.forEach(c => {
+    const n = ITEMS.filter(i=>i.cat===c).length;
+    document.getElementById('cnt-'+c).textContent = n;
+    document.getElementById('sb-'+c).textContent = n;
+    total += n;
+  });
+  document.getElementById('cnt-all').textContent = total;
+  document.getElementById('sb-all').textContent = total;
+  filter();
+}
+
+// ═══════════════════════════════════
+// CATEGORY / VIEW
+// ═══════════════════════════════════
+
+function showCat(c) {
+  cat = c; expanded = null;
+  document.querySelectorAll('.cat-tab').forEach((t,i)=>t.classList.toggle('active',['all','food','beverages'][i]===c));
+  document.querySelectorAll('.sb-link').forEach((l,i)=>l.classList.toggle('active',['all','food','beverages'][i]===c));
+  filter();
+}
+
+function setView(v) {
+  view = v;
+  document.getElementById('btn-tbl').classList.toggle('active', v==='table');
+  document.getElementById('btn-crd').classList.toggle('active', v==='cards');
+  filter();
+}
+
+// ═══════════════════════════════════
+// FILTER / SORT
+// ═══════════════════════════════════
+
+function filter() {
+  const q = document.getElementById('search-box').value.toLowerCase();
+  const irr = document.getElementById('f-irr').value;
+  const tag = document.getElementById('f-tag').value;
+  const rar = document.getElementById('f-rar').value;
+
+  let list = ITEMS.filter(i => {
+    if (cat !== 'all' && i.cat !== cat) return false;
+    if (q && !i.name.toLowerCase().includes(q) && !i.effects.toLowerCase().includes(q)) return false;
+    if (irr === 'yes' && !i.irradiated) return false;
+    if (irr === 'no' && i.irradiated) return false;
+    if (tag && !i.tags.includes(tag)) return false;
+    if (rar !== '' && String(i.rarity) !== rar) return false;
+    return true;
+  });
+
+  list.sort((a,b) => {
+    let av = a[sortKey] ?? -1, bv = b[sortKey] ?? -1;
+    if (typeof av==='string') av=av.toLowerCase();
+    if (typeof bv==='string') bv=bv.toLowerCase();
+    return av<bv ? -sortDir : av>bv ? sortDir : 0;
+  });
+
+  document.getElementById('shown-count').textContent = list.length;
+  render(list);
+}
+
+function setSort(k) {
+  sortDir = sortKey===k ? -sortDir : 1;
+  sortKey = k;
+  filter();
+}
+
+// ═══════════════════════════════════
+// RENDER
+// ═══════════════════════════════════
+
+const TITLES = { all:'All Consumables', food:'Food', beverages:'Beverages' };
+const DESCS = {
+  all:'All consumable items from the Fallout 2D20 core rulebook. Food and beverages cannot be used by robot characters. Food cannot be consumed in combat; beverages are a Major Action in combat. Only one of each per scene.',
+  food:'Food items restore HP and cannot be consumed during combat. Limited to one food item per scene. Items marked Irradiated require a 1 DC roll — on an Effect ★, suffer 1 Radiation damage that ignores all equipment resistance.',
+  beverages:'Beverages can be consumed in combat as a Major Action, but only one per scene. Most effects last until end of scene. Alcoholic drinks provide STR/CHA reroll bonuses but penalise INT and risk addiction.',
+};
+
+function render(list) {
+  const out = document.getElementById('items-output');
+
+  const foodRuleBox = `
+    <div class="rule-grid">
+      <div class="rule-box">
+        <div class="rule-title">☢ Irradiated Items</div>
+        When you consume an irradiated item, roll <strong>1 DC</strong>. If you roll an <strong>Effect ★</strong>, you suffer <strong>1 Radiation damage</strong> — this ignores any resistance from equipment or armor.
+      </div>
+      <div class="rule-box" style="border-left-color:var(--green)">
+        <div class="rule-title" style="color:var(--green)">⊕ Maximum HP</div>
+        When an item increases your Max HP, you also gain the same amount of <strong>current HP</strong>. When the effect ends, Max HP returns to normal; current HP is only reduced if it now exceeds the new maximum.
+      </div>
+    </div>`;
+
+  const bevRuleBox = `
+    <div class="rule-box" style="border-left-color:var(--orange)">
+      <div class="rule-title" style="color:var(--orange)">🍺 Alcoholic Beverages</div>
+      All alcoholic drinks grant: <strong>re-roll 1d20 on STR and CHA tests</strong>, but <strong>increase the difficulty of INT tests by +1</strong>. After drinking, roll 1 DC per alcoholic drink consumed this session — if <strong>two or more Effects ★</strong> are rolled, you become <strong>addicted</strong> (+1 difficulty to CHA and AGI tests while sober). The <strong>Party Boy/Party Girl</strong> perk grants immunity to alcohol addiction.
+    </div>`;
+
+  let ruleHtml = '';
+  if (cat === 'all') ruleHtml = foodRuleBox + bevRuleBox;
+  else if (cat === 'food') ruleHtml = foodRuleBox;
+  else if (cat === 'beverages') ruleHtml = bevRuleBox;
+
+  if (!list.length) {
+    out.innerHTML = `<div class="cat-header"><div class="cat-title">${TITLES[cat]}</div></div>${ruleHtml}<div class="no-results"><span class="big">// NO DATA //</span>No items match your current filters.</div>`;
+    return;
+  }
+
+  let html = `<div class="cat-header"><div class="cat-title">${TITLES[cat]}</div><div class="cat-desc">${DESCS[cat]}</div></div>${ruleHtml}`;
+  html += view==='table' ? renderTable(list) : renderCards(list);
+  out.innerHTML = html;
+}
+
+function renderTable(list) {
+  const a = k => `<span class="sa">${sortKey===k?(sortDir===1?'▲':'▼'):'⇅'}</span>`;
+  let h = `<div class="items-table-wrap"><table class="items-table"><thead><tr>
+    <th onclick="setSort('name')" class="${sortKey==='name'?'sorted':''}">Item ${a('name')}</th>
+    <th onclick="setSort('cat')" class="${sortKey==='cat'?'sorted':''}">Type ${a('cat')}</th>
+    <th onclick="setSort('hp')" class="${sortKey==='hp'?'sorted':''}">HP ${a('hp')}</th>
+    <th>Effects</th>
+    <th onclick="setSort('irradiated')" class="${sortKey==='irradiated'?'sorted':''}">☢ ${a('irradiated')}</th>
+    <th onclick="setSort('weight')" class="${sortKey==='weight'?'sorted':''}">Wt ${a('weight')}</th>
+    <th onclick="setSort('cost')" class="${sortKey==='cost'?'sorted':''}">Caps ${a('cost')}</th>
+    <th onclick="setSort('rarity')" class="${sortKey==='rarity'?'sorted':''}">Rarity ${a('rarity')}</th>
+  </tr></thead><tbody>`;
+
+  list.forEach(i => {
+    const exp = expanded===i.id;
+    h += `<tr class="${exp?'expanded':''}" onclick="toggleExp('${i.id}')">
+      <td>
+        <div class="iname">${i.name}</div>
+        ${i.tags.includes('alcoholic')?'<span class="alc-badge" style="margin-top:2px;display:inline-block;">Alcoholic</span>':''}
+      </td>
+      <td style="font-size:0.68rem;color:var(--text-dim)">${i.cat==='food'?'Food':'Beverage'}</td>
+      <td><div class="hp-val ${i.hp===0?'zero':''}">${i.hp>0?'+'+i.hp:'—'}</div></td>
+      <td><div class="effects-cell">${fmtEffects(i)}</div></td>
+      <td>${i.irradiated?'<span class="rad-badge rad-yes">☢ YES</span>':'<span class="rad-badge rad-no">CLEAN</span>'}</td>
+      <td style="font-size:0.73rem;color:var(--text-dim)">${i.weight}</td>
+      <td><div class="cost-val">${i.cost}</div></td>
+      <td>${rPips(i.rarity)}</td>
+    </tr>`;
+    if (exp) h += `<tr class="detail-row"><td colspan="8">${detail(i)}</td></tr>`;
+  });
+
+  return h + '</tbody></table></div>';
+}
+
+function renderCards(list) {
+  let h = '<div class="items-cards">';
+  list.forEach(i => {
+    const exp = expanded===i.id;
+    h += `<div class="item-card ${exp?'selected':''}" onclick="toggleExp('${i.id}')">
+      <div class="ic-name">${i.name}</div>
+      <div class="ic-badges">
+        ${i.irradiated?'<span class="rad-badge rad-yes">☢ Irrad.</span>':''}
+        ${i.tags.includes('alcoholic')?'<span class="alc-badge">Alcoholic</span>':''}
+        ${i.tags.includes('ap')?'<span style="display:inline-block;font-size:0.58rem;padding:0.1rem 0.3rem;border:1px solid rgba(245,166,35,0.4);color:var(--amber);background:var(--amber-glow);font-family:Oswald;letter-spacing:1px;text-transform:uppercase;">+AP</span>':''}
+      </div>
+      <div class="ic-stats">
+        <div class="ic-stat"><div class="ic-stat-val" style="color:var(--green)">${i.hp>0?'+'+i.hp:'—'}</div><div class="ic-stat-label">HP</div></div>
+        <div class="ic-stat"><div class="ic-stat-val" style="color:var(--amber);font-size:0.85rem;padding-top:3px">${i.weight}</div><div class="ic-stat-label">WT</div></div>
+        <div class="ic-stat"><div class="ic-stat-val" style="color:var(--amber);font-size:0.85rem;padding-top:3px">${i.cost}</div><div class="ic-stat-label">CAPS</div></div>
+      </div>
+      ${i.effects!=='—'?`<div class="ic-effects">${i.effects}</div>`:''}
+      <div style="margin-top:0.5rem">${rPips(i.rarity)}</div>
+    </div>`;
+    if (exp) h += `<div style="grid-column:1/-1;background:var(--panel3);border:1px solid rgba(245,166,35,0.2);border-top:2px solid var(--amber);margin-bottom:0.5rem">${detail(i)}</div>`;
+  });
+  return h + '</div>';
+}
+
+function detail(i) {
+  return `<div class="detail-inner">
+    <div>
+      <div class="d-title">Item Statistics</div>
+      <div class="d-row"><span class="key">Category</span><span class="val">${i.cat==='food'?'Food':'Beverage'}</span></div>
+      <div class="d-row"><span class="key">HP Healed</span><span class="val" style="color:var(--green)">${i.hp>0?'+'+i.hp+' HP':'—'}</span></div>
+      <div class="d-row"><span class="key">Irradiated</span><span class="val" style="color:${i.irradiated?'var(--rad)':'var(--text-dim)'}">${i.irradiated?'☢ Yes — roll 1 DC on consume':'No'}</span></div>
+      <div class="d-row"><span class="key">Alcoholic</span><span class="val" style="color:${i.tags.includes('alcoholic')?'var(--orange)':'var(--text-dim)'}">${i.tags.includes('alcoholic')?'Yes — STR/CHA reroll, +1 diff INT':'No'}</span></div>
+      <div class="d-row"><span class="key">Weight</span><span class="val">${i.weight} lbs</span></div>
+      <div class="d-row"><span class="key">Cost</span><span class="val">${i.cost} caps</span></div>
+      <div class="d-row"><span class="key">Rarity</span><span class="val">${i.rarity} / 5</span></div>
+    </div>
+    <div>
+      <div class="d-title">Effects &amp; Notes</div>
+      <div class="d-effects">${i.effects!=='—'?i.effects:'<span style="color:var(--text-dim)">No special effects.</span>'}</div>
+      <div class="d-title" style="margin-top:1rem">Usage Rules</div>
+      <div class="d-rules">
+        ${i.cat==='food'
+          ? `• <strong>Combat:</strong> Cannot be consumed during combat.<br>• <strong>Frequency:</strong> Only one food item per scene.${i.irradiated?'<br>• <strong style="color:var(--rad)">Irradiated:</strong> Roll 1 DC on consume. Effect ★ = 1 Radiation damage (ignores armor).':''}`
+          : `• <strong>Combat:</strong> Major Action to consume in combat.<br>• <strong>Frequency:</strong> Only one beverage per scene.<br>• <strong>Duration:</strong> Most effects last until end of scene.${i.tags.includes('alcoholic')?'<br>• <strong style="color:var(--orange)">Addiction:</strong> Roll 1 DC per alcoholic drink this session. Two or more Effects ★ = addicted.':''}${i.irradiated?'<br>• <strong style="color:var(--rad)">Irradiated:</strong> Roll 1 DC on consume. Effect ★ = 1 Radiation damage.':''}`
+        }
+      </div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════
+
+function fmtEffects(i) {
+  const tagMap = {
+    ap:'<span class="eff-tag ap-tag">AP GAIN</span>',
+    heals_rad:'<span class="eff-tag">HEALS RAD</span>',
+    rad_resist:'<span class="eff-tag">RAD RESIST</span>',
+    dmg_resist:'<span class="eff-tag">DMG RESIST</span>',
+    max_hp:'<span class="eff-tag">+MAX HP</span>',
+    group_ap:'<span class="eff-tag ap-tag">GROUP AP</span>',
+    str_boost:'<span class="eff-tag">STR BOOST</span>',
+    end_boost:'<span class="eff-tag">END BOOST</span>',
+    per_boost:'<span class="eff-tag">PER BOOST</span>',
+    agi_boost:'<span class="eff-tag">AGI BOOST</span>',
+    cures_addic:'<span class="eff-tag">CURES ADDIC.</span>',
+  };
+  const tags = i.tags.filter(t=>t!=='alcoholic').map(t=>tagMap[t]||'').join('');
+  const desc = i.effects!=='—' ? `<div style="margin-top:${tags?'0.25rem':'0'};font-size:0.69rem">${i.effects}</div>` : '';
+  return tags + desc || '<span style="color:var(--text-dim);font-size:0.68rem">—</span>';
+}
+
+function rPips(r) {
+  return `<div class="rarity">${Array.from({length:5},(_,i)=>`<div class="rarity-pip ${i<r?'filled':''}"></div>`).join('')}</div>`;
+}
+
+function toggleExp(id) {
+  expanded = expanded===id ? null : id;
+  filter();
+  if (expanded) setTimeout(()=>{document.querySelector('.detail-inner')?.scrollIntoView({behavior:'smooth',block:'nearest'})},60);
+}
+
+init();
+</script>
+</body>
+</html>
