@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fallout 2D20 — Armory</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Oswald:wght@300;400;600;700&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root {
+  --amber:#f5a623;--amber-dim:#c47d0e;--amber-glow:rgba(245,166,35,0.1);
+  --green:#39ff14;--green-dim:#1a7a00;--green-pale:rgba(57,255,20,0.07);
+  --red:#e63232;--blue:#4ab3f4;--teal:#1abc9c;--teal-pale:rgba(26,188,156,0.08);
+  --orange:#e67e22;--orange-pale:rgba(230,126,34,0.08);
+  --rad:#9b59b6;--rad-pale:rgba(155,89,182,0.1);
+  --dark:#060604;--darker:#030302;
+  --panel:#0f0f0c;--panel2:#161610;--panel3:#1d1d16;
+  --border:rgba(245,166,35,0.2);
+  --text:#d4c4a0;--text-dim:#8a7a5a;--text-bright:#ede0c0;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{background:var(--darker);color:var(--text);font-family:'Share Tech Mono',monospace;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px);pointer-events:none;z-index:9999}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,0.55) 100%);pointer-events:none;z-index:9998}
+
+/* HEADER */
+#header{position:sticky;top:0;z-index:500;background:var(--panel);border-bottom:2px solid var(--amber);box-shadow:0 0 40px rgba(245,166,35,0.15);padding:0 1.5rem;display:flex;align-items:center;gap:1rem;height:58px}
+.hdr-pip{width:36px;height:36px;flex-shrink:0}
+.hdr-title{font-family:'Oswald',sans-serif;font-size:1.3rem;font-weight:700;color:var(--amber);letter-spacing:4px;text-transform:uppercase;text-shadow:0 0 15px rgba(245,166,35,0.35);line-height:1}
+.hdr-sub{font-size:0.58rem;color:var(--text-dim);letter-spacing:3px;margin-top:2px}
+.hdr-nav{display:flex;gap:0.4rem;margin-left:auto;flex-wrap:wrap}
+.hdr-link{font-family:'Share Tech Mono',monospace;font-size:0.65rem;letter-spacing:2px;text-transform:uppercase;padding:0.3rem 0.7rem;border:1px solid var(--border);color:var(--text-dim);text-decoration:none;transition:all 0.15s;background:transparent;cursor:pointer}
+.hdr-link:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+
+/* CATEGORY TABS */
+#cat-bar{background:var(--panel2);border-bottom:1px solid var(--border);padding:0 1.5rem;display:flex;align-items:stretch;overflow-x:auto;scrollbar-width:none}
+#cat-bar::-webkit-scrollbar{display:none}
+.cat-tab{display:flex;align-items:center;gap:0.45rem;padding:0.7rem 1.1rem;font-family:'Oswald',sans-serif;font-size:0.72rem;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;border-top:none;border-left:none;border-right:none;background:transparent;transition:all 0.15s;flex-shrink:0;margin-bottom:-1px}
+.cat-tab:hover{color:var(--amber)}
+.cat-tab.active{color:var(--amber);border-bottom-color:var(--amber);background:var(--amber-glow)}
+.cat-count{background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.25);font-size:0.58rem;padding:0.05rem 0.3rem;color:var(--amber);font-family:'Share Tech Mono',monospace}
+
+/* TOOLBAR */
+#toolbar{background:var(--panel);border-bottom:1px solid rgba(245,166,35,0.07);padding:0.7rem 1.5rem;display:flex;align-items:center;gap:0.8rem;flex-wrap:wrap}
+#search-box{background:var(--panel2);border:1px solid var(--border);color:var(--text);font-family:'Share Tech Mono',monospace;font-size:0.8rem;padding:0.4rem 0.8rem;outline:none;transition:border-color 0.15s;width:220px}
+#search-box:focus{border-color:var(--amber);box-shadow:0 0 10px rgba(245,166,35,0.1)}
+#search-box::placeholder{color:var(--text-dim)}
+.filter-select{background:var(--panel2);border:1px solid var(--border);color:var(--text-dim);font-family:'Share Tech Mono',monospace;font-size:0.72rem;padding:0.4rem 0.7rem;outline:none;cursor:pointer;appearance:none;min-width:140px}
+.filter-select:focus{border-color:var(--amber);color:var(--text)}
+.filter-select option{background:var(--panel2);color:var(--text)}
+.result-count{font-size:0.68rem;color:var(--text-dim);letter-spacing:2px;margin-left:auto}
+.result-count span{color:var(--amber)}
+.view-toggle{display:flex;gap:0.3rem}
+.view-btn{width:32px;height:32px;background:transparent;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.75rem;transition:all 0.15s}
+.view-btn:hover,.view-btn.active{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+
+/* LAYOUT */
+#main{display:flex;min-height:calc(100vh - 150px)}
+#sidebar{width:240px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;height:calc(100vh - 150px);position:sticky;top:150px}
+.sb-section{border-bottom:1px solid rgba(245,166,35,0.07)}
+.sb-heading{font-family:'Oswald',sans-serif;font-size:0.58rem;letter-spacing:4px;color:var(--amber);opacity:0.6;padding:0.8rem 1rem 0.3rem;text-transform:uppercase}
+.sb-link{display:flex;align-items:center;justify-content:space-between;padding:0.38rem 1rem 0.38rem 1.4rem;color:var(--text-dim);font-size:0.75rem;cursor:pointer;border-left:2px solid transparent;transition:all 0.12s}
+.sb-link:hover{color:var(--amber);border-left-color:var(--amber);background:var(--amber-glow);padding-left:1.7rem}
+.sb-link.active{color:var(--amber);border-left-color:var(--amber);background:var(--amber-glow)}
+.sb-badge{font-size:0.6rem;color:var(--text-dim);background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.15);padding:0.05rem 0.3rem}
+.legend-row{display:flex;align-items:center;gap:0.5rem;padding:0.25rem 1rem;font-size:0.68rem;color:var(--text-dim)}
+.legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* CONTENT */
+#content{flex:1;overflow-y:auto;padding:1.5rem 1.8rem}
+.cat-header{margin-bottom:1rem;padding-bottom:0.8rem;border-bottom:1px solid var(--border)}
+.cat-title{font-family:'Oswald',sans-serif;font-size:2rem;font-weight:700;color:var(--amber);letter-spacing:4px;text-transform:uppercase;text-shadow:0 0 20px rgba(245,166,35,0.25);line-height:1}
+.cat-desc{font-size:0.76rem;color:var(--text-dim);line-height:1.65;margin-top:0.6rem;max-width:800px}
+
+/* RULE BOX */
+.rule-box{background:var(--panel2);border:1px solid var(--border);border-left:3px solid var(--amber);padding:0.7rem 1rem;font-size:0.76rem;line-height:1.65;color:var(--text-dim);margin:0.8rem 0 1.4rem;max-width:860px}
+.rule-box strong{color:var(--amber)}
+.rule-box .rule-title{font-family:'Oswald',sans-serif;font-size:0.62rem;letter-spacing:3px;color:var(--amber);text-transform:uppercase;margin-bottom:0.35rem}
+.rule-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;max-width:860px;margin:0.8rem 0 1.4rem}
+@media(max-width:600px){.rule-grid{grid-template-columns:1fr}}
+
+/* MODS SECTION */
+.mods-toggle{display:inline-flex;align-items:center;gap:0.5rem;border:1px solid var(--border);padding:0.4rem 0.9rem;font-family:'Share Tech Mono',monospace;font-size:0.7rem;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);background:transparent;cursor:pointer;margin-bottom:1rem;transition:all 0.15s}
+.mods-toggle:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+.mods-toggle.open{border-color:var(--amber);color:var(--amber);background:var(--amber-glow)}
+.mods-panel{display:none;margin-bottom:1.5rem;max-width:860px}
+.mods-panel.open{display:block}
+.mods-cat-title{font-family:'Oswald',sans-serif;font-size:0.65rem;letter-spacing:4px;color:var(--amber);opacity:0.7;text-transform:uppercase;margin:1rem 0 0.4rem;border-bottom:1px solid rgba(245,166,35,0.1);padding-bottom:0.3rem}
+.mods-table{width:100%;border-collapse:collapse;font-size:0.72rem;margin-bottom:0.8rem}
+.mods-table th{background:rgba(245,166,35,0.07);color:var(--amber);font-family:'Oswald',sans-serif;font-size:0.6rem;letter-spacing:2px;padding:0.4rem 0.6rem;border:1px solid var(--border);text-align:left;text-transform:uppercase;white-space:nowrap}
+.mods-table td{padding:0.35rem 0.6rem;border:1px solid rgba(245,166,35,0.07);color:var(--text-dim);vertical-align:middle}
+.mods-table td:first-child{color:var(--text-bright);font-family:'Oswald',sans-serif;font-size:0.78rem;letter-spacing:1px}
+.perk-badge{display:inline-block;font-size:0.58rem;padding:0.05rem 0.3rem;border:1px solid rgba(57,255,20,0.3);color:var(--green);background:var(--green-pale);font-family:'Oswald',sans-serif;letter-spacing:1px;text-transform:uppercase}
+
+/* TABLE */
+.items-table-wrap{overflow-x:auto;margin-bottom:2rem}
+.items-table{width:100%;border-collapse:collapse;font-size:0.75rem;min-width:760px}
+.items-table th{background:rgba(245,166,35,0.09);color:var(--amber);font-family:'Oswald',sans-serif;font-size:0.63rem;letter-spacing:2px;padding:0.5rem 0.7rem;border:1px solid var(--border);text-align:left;text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none}
+.items-table th:hover{background:rgba(245,166,35,0.14)}
+.items-table th .sa{margin-left:4px;opacity:0.4;font-size:0.58rem}
+.items-table th.sorted .sa{opacity:1;color:var(--green)}
+.items-table td{padding:0.45rem 0.7rem;border:1px solid rgba(245,166,35,0.07);vertical-align:middle}
+.items-table tr{cursor:pointer}
+.items-table tr:hover td{background:var(--amber-glow)}
+.items-table tr.expanded td{background:rgba(245,166,35,0.05);border-bottom-color:transparent}
+.iname{font-family:'Oswald',sans-serif;font-size:0.82rem;color:var(--text-bright);letter-spacing:1px;text-transform:uppercase}
+.dmg-val{font-family:'VT323',monospace;font-size:1.3rem;line-height:1;color:var(--red)}
+.fr-val{font-family:'VT323',monospace;font-size:1.2rem;line-height:1;color:var(--amber)}
+.range-badge{display:inline-block;font-size:0.6rem;padding:0.1rem 0.4rem;border:1px solid;font-family:'Oswald',sans-serif;letter-spacing:1px;text-transform:uppercase}
+.range-C{color:#39ff14;border-color:rgba(57,255,20,0.4);background:rgba(57,255,20,0.06)}
+.range-M{color:#4ab3f4;border-color:rgba(74,179,244,0.4);background:rgba(74,179,244,0.06)}
+.range-L{color:#f5a623;border-color:rgba(245,166,35,0.4);background:rgba(245,166,35,0.06)}
+.dtype-phys{color:var(--text-dim);font-size:0.68rem}
+.dtype-energy{color:#4ab3f4;font-size:0.68rem}
+.dtype-rad{color:var(--rad);font-size:0.68rem}
+.dtype-both{color:var(--teal);font-size:0.68rem}
+.quality-tag{display:inline-block;font-size:0.57rem;padding:0.05rem 0.28rem;border:1px solid rgba(245,166,35,0.25);color:var(--text-dim);background:rgba(245,166,35,0.04);margin:0.1rem 0.1rem 0.1rem 0;white-space:nowrap;font-family:'Oswald',sans-serif;letter-spacing:1px;text-transform:uppercase}
+.quality-tag.notable{border-color:rgba(245,166,35,0.5);color:var(--amber)}
+.rarity{display:flex;gap:2px;align-items:center}
+.rarity-pip{width:7px;height:7px;border-radius:1px;border:1px solid rgba(245,166,35,0.25);background:transparent}
+.rarity-pip.filled{background:var(--amber);border-color:var(--amber)}
+.cost-val{font-family:'Oswald',sans-serif;font-size:0.82rem;color:var(--amber);letter-spacing:1px}
+.deff-tag{display:inline-block;font-size:0.57rem;padding:0.05rem 0.28rem;border:1px solid rgba(230,50,50,0.35);color:#e08080;background:rgba(230,50,50,0.05);margin:0.1rem 0.1rem 0.1rem 0;font-family:'Oswald',sans-serif;letter-spacing:1px;text-transform:uppercase}
+
+/* EXPANDED */
+.detail-row td{padding:0!important;border-top:none!important;background:var(--panel3)!important}
+.detail-inner{padding:1rem 1.2rem 1.2rem;border:1px solid rgba(245,166,35,0.15);border-top:2px solid var(--amber);display:grid;grid-template-columns:1fr 1fr;gap:1.2rem}
+@media(max-width:700px){.detail-inner{grid-template-columns:1fr}}
+.d-title{font-family:'Oswald',sans-serif;font-size:0.6rem;letter-spacing:4px;color:var(--amber);opacity:0.65;text-transform:uppercase;border-bottom:1px solid rgba(245,166,35,0.1);padding-bottom:0.3rem;margin-bottom:0.6rem}
+.d-row{display:flex;justify-content:space-between;font-size:0.75rem;padding:0.2rem 0;border-bottom:1px solid rgba(245,166,35,0.05)}
+.d-row .key{color:var(--text-dim)}
+.d-row .val{color:var(--text-bright);font-family:'Oswald',sans-serif;letter-spacing:1px;font-size:0.78rem}
+.d-qualities{display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.5rem}
+.d-effects{font-size:0.76rem;color:var(--text);line-height:1.65;margin-top:0.4rem}
+.d-rules{font-size:0.73rem;color:var(--text-dim);line-height:1.65;margin-top:0.5rem}
+.d-rules strong{color:var(--amber)}
+
+/* CARDS */
+.items-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.7rem;margin-bottom:2rem}
+.item-card{background:var(--panel2);border:1px solid var(--border);padding:0.9rem 1rem;cursor:pointer;transition:all 0.15s;position:relative}
+.item-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:transparent;transition:background 0.15s}
+.item-card:hover{border-color:rgba(245,166,35,0.4)}
+.item-card:hover::before,.item-card.selected::before{background:var(--amber)}
+.item-card.selected{border-color:var(--amber)}
+.ic-name{font-family:'Oswald',sans-serif;font-size:0.88rem;color:var(--text-bright);letter-spacing:1px;text-transform:uppercase;margin-bottom:0.4rem;line-height:1.2}
+.ic-stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.25rem;margin-bottom:0.5rem}
+.ic-stat{background:var(--panel3);text-align:center;padding:0.25rem;border:1px solid rgba(245,166,35,0.07)}
+.ic-stat-val{font-family:'VT323',monospace;font-size:1.2rem;line-height:1}
+.ic-stat-label{font-size:0.48rem;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase}
+.ic-tags{display:flex;flex-wrap:wrap;gap:0.2rem;margin-top:0.3rem}
+
+/* MISC */
+.no-results{text-align:center;padding:3rem 1rem;color:var(--text-dim);font-size:0.8rem;letter-spacing:2px}
+.no-results .big{font-family:'VT323',monospace;font-size:3rem;color:rgba(245,166,35,0.2);display:block;margin-bottom:0.5rem}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--darker)}
+::-webkit-scrollbar-thumb{background:var(--amber-dim)}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <svg class="hdr-pip" viewBox="0 0 38 38" fill="none">
+    <rect x="2" y="5" width="34" height="28" rx="3" stroke="#f5a623" stroke-width="1.8" fill="none"/>
+    <rect x="5" y="8" width="16" height="12" rx="1" fill="#060604" stroke="#39ff14" stroke-width="1.2"/>
+    <circle cx="13" cy="14" r="3" stroke="#39ff14" stroke-width="1.2" fill="none"/>
+    <circle cx="13" cy="14" r="1" fill="#39ff14"/>
+    <rect x="23" y="9" width="9" height="1.8" rx="0.9" fill="#f5a623"/>
+    <rect x="23" y="13" width="7" height="1.8" rx="0.9" fill="#f5a623" opacity="0.5"/>
+    <rect x="23" y="17" width="9" height="1.8" rx="0.9" fill="#f5a623"/>
+    <rect x="5" y="23" width="4" height="4" rx="2" fill="#39ff14"/>
+    <rect x="11" y="23" width="4" height="4" rx="2" fill="#39ff14" opacity="0.3"/>
+    <rect x="17" y="23" width="4" height="4" rx="2" fill="#39ff14" opacity="0.3"/>
+  </svg>
+  <div>
+    <div class="hdr-title">ARMORY</div>
+    <div class="hdr-sub">FALLOUT 2D20 // MODIPHIUS ENTERTAINMENT // WASTELAND WEAPONS DATABASE</div>
+  </div>
+  <div class="hdr-nav">
+    <a class="hdr-link" href="index.html">⌂ HOME</a>
+    <a class="hdr-link" href="rules.html">FIELD MANUAL</a>
+    <a class="hdr-link" href="fallout-char-creator.html">CHAR. CREATOR</a>
+    <a class="hdr-link" href="consumables.html">PROVISIONS</a>
+  </div>
+</div>
+
+<div id="cat-bar">
+  <button class="cat-tab active" onclick="showCat('all')">ALL <span class="cat-count" id="cnt-all">0</span></button>
+  <button class="cat-tab" onclick="showCat('small_guns')">🔫 SMALL GUNS <span class="cat-count" id="cnt-small_guns">0</span></button>
+  <button class="cat-tab" onclick="showCat('energy')">⚡ ENERGY <span class="cat-count" id="cnt-energy">0</span></button>
+  <button class="cat-tab" onclick="showCat('big_guns')">💥 BIG GUNS <span class="cat-count" id="cnt-big_guns">0</span></button>
+  <button class="cat-tab" onclick="showCat('melee')">⚔ MELEE <span class="cat-count" id="cnt-melee">0</span></button>
+  <button class="cat-tab" onclick="showCat('unarmed')">👊 UNARMED <span class="cat-count" id="cnt-unarmed">0</span></button>
+</div>
+
+<div id="toolbar">
+  <input type="text" id="search-box" placeholder="⌕  Search weapons…" oninput="filter()">
+  <select class="filter-select" id="f-dtype" onchange="filter()">
+    <option value="">All Damage Types</option>
+    <option value="Physical">Physical</option>
+    <option value="Energy">Energy</option>
+    <option value="Radiation">Radiation</option>
+    <option value="Physical/Energy">Physical / Energy</option>
+  </select>
+  <select class="filter-select" id="f-range" onchange="filter()">
+    <option value="">All Ranges</option>
+    <option value="C">Close (C)</option>
+    <option value="M">Medium (M)</option>
+    <option value="L">Long (L)</option>
+  </select>
+  <select class="filter-select" id="f-rar" onchange="filter()">
+    <option value="">All Rarities</option>
+    <option value="0">Common (0)</option>
+    <option value="1">Uncommon (1)</option>
+    <option value="2">Rare (2)</option>
+    <option value="3">Very Rare (3)</option>
+    <option value="4">Exceptional (4)</option>
+    <option value="5">Legendary (5)</option>
+  </select>
+  <div class="view-toggle">
+    <button class="view-btn active" id="btn-tbl" onclick="setView('table')" title="Table">☰</button>
+    <button class="view-btn" id="btn-crd" onclick="setView('cards')" title="Cards">⊞</button>
+  </div>
+  <div class="result-count">SHOWING <span id="shown-count">0</span> WEAPONS</div>
+</div>
+
+<div id="main">
+  <div id="sidebar">
+    <div class="sb-section">
+      <div class="sb-heading">Categories</div>
+      <div class="sb-link active" onclick="showCat('all')">All Weapons <span class="sb-badge" id="sb-all">0</span></div>
+      <div class="sb-link" onclick="showCat('small_guns')">Small Guns <span class="sb-badge" id="sb-small_guns">0</span></div>
+      <div class="sb-link" onclick="showCat('energy')">Energy Weapons <span class="sb-badge" id="sb-energy">0</span></div>
+      <div class="sb-link" onclick="showCat('big_guns')">Big Guns <span class="sb-badge" id="sb-big_guns">0</span></div>
+      <div class="sb-link" onclick="showCat('melee')">Melee Weapons <span class="sb-badge" id="sb-melee">0</span></div>
+      <div class="sb-link" onclick="showCat('unarmed')">Unarmed <span class="sb-badge" id="sb-unarmed">0</span></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-heading">Legend</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--red)"></div>Damage Rating (DC)</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--amber)"></div>Fire Rate</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#39ff14"></div>Close Range</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#4ab3f4"></div>Medium Range</div>
+      <div class="legend-row"><div class="legend-dot" style="background:var(--amber)"></div>Long Range</div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-heading">Quick Rules</div>
+      <div style="padding:0.6rem 1rem;font-size:0.67rem;color:var(--text-dim);line-height:1.7">
+        <div style="margin-bottom:0.4rem"><span style="color:var(--amber)">Burst:</span> +1 CD damage per extra AP spent (max Fire Rate).</div>
+        <div style="margin-bottom:0.4rem"><span style="color:var(--amber)">Spread:</span> Hits all targets in a zone.</div>
+        <div style="margin-bottom:0.4rem"><span style="color:var(--amber)">Vicious:</span> Effects on ★ are Piercing 1.</div>
+        <div style="margin-bottom:0.4rem"><span style="color:var(--amber)">Blast:</span> Hits all targets in area.</div>
+        <div style="margin-bottom:0.4rem"><span style="color:var(--amber)">Gatling:</span> Fire Rate counts as minimum 3 for Burst.</div>
+        <div><span style="color:var(--amber)">Two-Handed:</span> Requires both hands to wield.</div>
+      </div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-heading">Modding</div>
+      <div style="padding:0.6rem 1rem;font-size:0.67rem;color:var(--text-dim);line-height:1.7">
+        <div style="margin-bottom:0.4rem"><span style="color:var(--amber)">Small Guns:</span> Repaired with Repair skill.</div>
+        <div><span style="color:var(--amber)">Energy:</span> Modded with Science skill.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="content">
+    <div id="items-output"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+
+const WEAPONS = [
+  // SMALL GUNS
+  { id:'44_pistol',       cat:'small_guns', name:'.44 Pistol',           dmg:6,  dmgEffects:'Vicious',               dmgType:'Physical',       fireRate:1, range:'C', qualities:['Close Quarters'],                        weight:4,  cost:99,  rarity:2 },
+  { id:'10mm_pistol',     cat:'small_guns', name:'10mm Pistol',          dmg:4,  dmgEffects:'—',                     dmgType:'Physical',       fireRate:2, range:'C', qualities:['Close Quarters','Reliable'],              weight:4,  cost:50,  rarity:1 },
+  { id:'flare_gun',       cat:'small_guns', name:'Flare Gun',            dmg:3,  dmgEffects:'—',                     dmgType:'Physical',       fireRate:0, range:'M', qualities:['Reliable'],                              weight:2,  cost:50,  rarity:1 },
+  { id:'assault_rifle',   cat:'small_guns', name:'Assault Rifle',        dmg:5,  dmgEffects:'Burst',                 dmgType:'Physical',       fireRate:2, range:'M', qualities:['Two-Handed'],                            weight:13, cost:144, rarity:2 },
+  { id:'combat_rifle',    cat:'small_guns', name:'Combat Rifle',         dmg:5,  dmgEffects:'—',                     dmgType:'Physical',       fireRate:2, range:'M', qualities:['Two-Handed'],                            weight:11, cost:117, rarity:2 },
+  { id:'gauss_rifle',     cat:'small_guns', name:'Gauss Rifle',          dmg:10, dmgEffects:'Piercing 1',            dmgType:'Physical',       fireRate:1, range:'L', qualities:['Two-Handed'],                            weight:16, cost:228, rarity:4 },
+  { id:'hunting_rifle',   cat:'small_guns', name:'Hunting Rifle',        dmg:6,  dmgEffects:'Piercing 1',            dmgType:'Physical',       fireRate:0, range:'M', qualities:['Two-Handed'],                            weight:10, cost:55,  rarity:2 },
+  { id:'smg',             cat:'small_guns', name:'Submachine Gun',       dmg:3,  dmgEffects:'Burst',                 dmgType:'Physical',       fireRate:3, range:'C', qualities:['Inaccurate','Two-Handed'],               weight:12, cost:109, rarity:1 },
+  { id:'combat_shotgun',  cat:'small_guns', name:'Combat Shotgun',       dmg:5,  dmgEffects:'Spread',                dmgType:'Physical',       fireRate:2, range:'C', qualities:['Inaccurate','Two-Handed'],               weight:11, cost:87,  rarity:2 },
+  { id:'db_shotgun',      cat:'small_guns', name:'Double-Barrel Shotgun',dmg:5,  dmgEffects:'Spread, Vicious',       dmgType:'Physical',       fireRate:0, range:'C', qualities:['Inaccurate','Two-Handed'],               weight:9,  cost:39,  rarity:1 },
+  { id:'pipe_boltaction', cat:'small_guns', name:'Pipe Bolt-Action',     dmg:5,  dmgEffects:'Piercing 1',            dmgType:'Physical',       fireRate:0, range:'C', qualities:['Unreliable'],                            weight:3,  cost:30,  rarity:0 },
+  { id:'pipe_gun',        cat:'small_guns', name:'Pipe Gun',             dmg:3,  dmgEffects:'—',                     dmgType:'Physical',       fireRate:2, range:'C', qualities:['Close Quarters','Unreliable'],            weight:2,  cost:30,  rarity:0 },
+  { id:'pipe_revolver',   cat:'small_guns', name:'Pipe Revolver',        dmg:4,  dmgEffects:'—',                     dmgType:'Physical',       fireRate:1, range:'C', qualities:['Close Quarters','Unreliable'],            weight:4,  cost:25,  rarity:0 },
+  { id:'railway_rifle',   cat:'small_guns', name:'Railway Rifle',        dmg:10, dmgEffects:'Breaking',              dmgType:'Physical',       fireRate:0, range:'M', qualities:['Debilitating','Two-Handed','Unreliable'], weight:14, cost:290, rarity:4 },
+  { id:'syringer',        cat:'small_guns', name:'Syringer',             dmg:3,  dmgEffects:'—',                     dmgType:'Physical',       fireRate:0, range:'M', qualities:['Two-Handed'],                            weight:6,  cost:132, rarity:2 },
+
+  // ENERGY WEAPONS
+  { id:'inst_laser',      cat:'energy', name:'Institute Laser',          dmg:3,  dmgEffects:'Burst',                 dmgType:'Energy',         fireRate:3, range:'C', qualities:['Close Quarters','Inaccurate'],            weight:4,  cost:50,  rarity:2 },
+  { id:'laser_musket',    cat:'energy', name:'Laser Musket',             dmg:5,  dmgEffects:'Piercing 1',            dmgType:'Energy',         fireRate:0, range:'M', qualities:['Two-Handed'],                            weight:13, cost:57,  rarity:1 },
+  { id:'laser_gun',       cat:'energy', name:'Laser Gun',                dmg:4,  dmgEffects:'Piercing 1',            dmgType:'Energy',         fireRate:2, range:'C', qualities:['Close Quarters'],                        weight:4,  cost:69,  rarity:2 },
+  { id:'plasma_gun',      cat:'energy', name:'Plasma Gun',               dmg:6,  dmgEffects:'—',                     dmgType:'Physical/Energy',fireRate:1, range:'C', qualities:['Close Quarters'],                        weight:4,  cost:123, rarity:3 },
+  { id:'gamma_gun',       cat:'energy', name:'Gamma Gun',                dmg:3,  dmgEffects:'Piercing 1, Stun',      dmgType:'Radiation',      fireRate:1, range:'M', qualities:['Blast','Inaccurate'],                    weight:3,  cost:156, rarity:5 },
+
+  // BIG GUNS
+  { id:'fat_man',         cat:'big_guns', name:'Fat Man',                dmg:21, dmgEffects:'Breaking, Radioactive, Vicious', dmgType:'Physical', fireRate:0, range:'M', qualities:['Blast','Inaccurate','Two-Handed'],       weight:31, cost:512, rarity:4 },
+  { id:'flamer',          cat:'big_guns', name:'Flamer',                 dmg:3,  dmgEffects:'Burst, Persistent, Spread',      dmgType:'Energy',   fireRate:4, range:'C', qualities:['Debilitating','Inaccurate','Two-Handed'],weight:16, cost:137, rarity:3 },
+  { id:'gatling_laser',   cat:'big_guns', name:'Gatling Laser',          dmg:3,  dmgEffects:'Burst, Piercing 1',              dmgType:'Energy',   fireRate:6, range:'M', qualities:['Gatling','Inaccurate','Two-Handed'],     weight:19, cost:804, rarity:3 },
+  { id:'heavy_incin',     cat:'big_guns', name:'Heavy Incinerator',      dmg:5,  dmgEffects:'Burst, Persistent, Spread',      dmgType:'Energy',   fireRate:3, range:'M', qualities:['Debilitating','Two-Handed'],             weight:20, cost:350, rarity:4 },
+  { id:'junk_jet',        cat:'big_guns', name:'Junk Jet',               dmg:6,  dmgEffects:'—',                              dmgType:'Physical', fireRate:1, range:'M', qualities:['Two-Handed'],                            weight:30, cost:285, rarity:3 },
+  { id:'minigun',         cat:'big_guns', name:'Minigun',                dmg:3,  dmgEffects:'Burst, Spread',                  dmgType:'Physical', fireRate:5, range:'M', qualities:['Gatling','Inaccurate','Two-Handed'],     weight:27, cost:382, rarity:2 },
+  { id:'missile_launch',  cat:'big_guns', name:'Missile Launcher',       dmg:11, dmgEffects:'—',                              dmgType:'Physical', fireRate:0, range:'L', qualities:['Blast','Two-Handed'],                    weight:21, cost:314, rarity:4 },
+
+  // MELEE
+  { id:'sword',           cat:'melee', name:'Sword',                     dmg:4,  dmgEffects:'Piercing 1',  dmgType:'Physical', fireRate:null, range:null, qualities:['Parry'],                weight:3,  cost:50,  rarity:2 },
+  { id:'combat_knife',    cat:'melee', name:'Combat Knife',              dmg:3,  dmgEffects:'Piercing 1',  dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:1,  cost:25,  rarity:1 },
+  { id:'machete',         cat:'melee', name:'Machete',                   dmg:3,  dmgEffects:'Piercing 1',  dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:2,  cost:25,  rarity:1 },
+  { id:'ripper',          cat:'melee', name:'Ripper',                    dmg:4,  dmgEffects:'Vicious',     dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:6,  cost:50,  rarity:2 },
+  { id:'shishkebab',      cat:'melee', name:'Shishkebab',                dmg:5,  dmgEffects:'Piercing 1',  dmgType:'Energy',   fireRate:null, range:null, qualities:['Parry'],                weight:3,  cost:200, rarity:3 },
+  { id:'switchblade',     cat:'melee', name:'Switchblade',               dmg:2,  dmgEffects:'Piercing 1',  dmgType:'Physical', fireRate:null, range:null, qualities:['Concealed'],            weight:1,  cost:20,  rarity:0 },
+  { id:'baseball_bat',    cat:'melee', name:'Baseball Bat',              dmg:4,  dmgEffects:'—',           dmgType:'Physical', fireRate:null, range:null, qualities:['Two-Handed'],            weight:3,  cost:25,  rarity:1 },
+  { id:'alum_bat',        cat:'melee', name:'Aluminum Baseball Bat',     dmg:5,  dmgEffects:'—',           dmgType:'Physical', fireRate:null, range:null, qualities:['Two-Handed'],            weight:2,  cost:32,  rarity:2 },
+  { id:'board',           cat:'melee', name:'Board',                     dmg:4,  dmgEffects:'—',           dmgType:'Physical', fireRate:null, range:null, qualities:['Two-Handed'],            weight:3,  cost:20,  rarity:0 },
+  { id:'lead_pipe',       cat:'melee', name:'Lead Pipe',                 dmg:3,  dmgEffects:'—',           dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:3,  cost:15,  rarity:0 },
+  { id:'pipe_wrench',     cat:'melee', name:'Pipe Wrench',               dmg:3,  dmgEffects:'—',           dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:2,  cost:30,  rarity:1 },
+  { id:'pool_cue',        cat:'melee', name:'Pool Cue',                  dmg:3,  dmgEffects:'—',           dmgType:'Physical', fireRate:null, range:null, qualities:['Two-Handed'],            weight:1,  cost:10,  rarity:0 },
+  { id:'rolling_pin',     cat:'melee', name:'Rolling Pin',               dmg:3,  dmgEffects:'—',           dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:1,  cost:10,  rarity:0 },
+  { id:'baton',           cat:'melee', name:'Baton',                     dmg:3,  dmgEffects:'—',           dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:2,  cost:15,  rarity:1 },
+  { id:'sledgehammer',    cat:'melee', name:'Sledgehammer',              dmg:5,  dmgEffects:'—',           dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:12, cost:40,  rarity:2 },
+  { id:'super_sledge',    cat:'melee', name:'Super Sledge',              dmg:6,  dmgEffects:'Breaking',    dmgType:'Physical', fireRate:null, range:null, qualities:['Two-Handed'],            weight:20, cost:180, rarity:3 },
+  { id:'tire_iron',       cat:'melee', name:'Tire Iron',                 dmg:3,  dmgEffects:'—',           dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:2,  cost:25,  rarity:1 },
+  { id:'walking_cane',    cat:'melee', name:'Walking Cane',              dmg:3,  dmgEffects:'—',           dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:2,  cost:10,  rarity:0 },
+  { id:'gun_bash_1h',     cat:'melee', name:'Gun Bash (1H)',             dmg:2,  dmgEffects:'Stun',        dmgType:'Physical', fireRate:null, range:null, qualities:['As Gun'],                weight:0,  cost:0,   rarity:0 },
+  { id:'gun_bash_2h',     cat:'melee', name:'Gun Bash (2H)',             dmg:3,  dmgEffects:'Stun',        dmgType:'Physical', fireRate:null, range:null, qualities:['As Two-Handed Gun'],     weight:0,  cost:0,   rarity:0 },
+
+  // UNARMED
+  { id:'unarmed_strike',  cat:'unarmed', name:'Unarmed Strike',          dmg:2,  dmgEffects:'—',           dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:0,  cost:0,   rarity:0 },
+  { id:'handy_rock',      cat:'unarmed', name:'Handy Rock',              dmg:2,  dmgEffects:'Vicious',     dmgType:'Physical', fireRate:null, range:null, qualities:['Thrown (C)'],            weight:1,  cost:0,   rarity:0 },
+  { id:'boxing_glove',    cat:'unarmed', name:'Boxing Glove',            dmg:3,  dmgEffects:'Stun',        dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:1,  cost:10,  rarity:1 },
+  { id:'deathclaw_gaunt', cat:'unarmed', name:'Deathclaw Gauntlet',      dmg:5,  dmgEffects:'Piercing 1',  dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:10, cost:75,  rarity:3 },
+  { id:'knuckles',        cat:'unarmed', name:'Knuckles',                dmg:3,  dmgEffects:'—',           dmgType:'Physical', fireRate:null, range:null, qualities:['Concealed'],            weight:0,  cost:10,  rarity:1 },
+  { id:'power_fist',      cat:'unarmed', name:'Power Fist',              dmg:4,  dmgEffects:'Stun',        dmgType:'Physical', fireRate:null, range:null, qualities:[],                       weight:4,  cost:100, rarity:2 },
+];
+
+// MODS DATA
+const MODS = {
+  small_guns: {
+    'Receiver Mods': [
+      { name:'Hardened',        prefix:'Hardened',          effects:'+1 DC damage',                                      weight:'—',  cost:'+20',  perks:'—' },
+      { name:'Powerful',        prefix:'Powerful',          effects:'+2 DC damage',                                      weight:'+1', cost:'+25',  perks:'Gun Nut 1' },
+      { name:'Advanced',        prefix:'Advanced',          effects:'+3 DC damage, +1 Fire Rate',                        weight:'+2', cost:'+35',  perks:'Gun Nut 2' },
+      { name:'Calibrated',      prefix:'Calibrated',        effects:'Gain Vicious',                                      weight:'—',  cost:'+25',  perks:'—' },
+      { name:'Automatic',       prefix:'Auto',              effects:'-1 DC, +2 Fire Rate, Gain Burst, Gain Inaccurate',  weight:'+1', cost:'+30',  perks:'Gun Nut 1' },
+      { name:'Hair Trigger',    prefix:'Hair Trigger',      effects:'+1 Fire Rate',                                      weight:'—',  cost:'+20',  perks:'Gun Nut 2' },
+      { name:'.38 Receiver',    prefix:'.38',               effects:'Change Damage to 4 DC, Ammo → .38',                 weight:'+3', cost:'+20',  perks:'Gun Nut 4' },
+      { name:'.308 Receiver',   prefix:'.308',              effects:'Change damage to 7 DC, Ammo → .308',                weight:'+4', cost:'+40',  perks:'Gun Nut 4' },
+      { name:'.45 Receiver',    prefix:'.45',               effects:'Change damage to 4 DC, +1 Fire Rate, Ammo → .45',  weight:'+2', cost:'+19',  perks:'Gun Nut 2' },
+      { name:'.50 Receiver',    prefix:'.50',               effects:'Change damage to 8 DC, Gain Vicious, Ammo → .50',  weight:'+4', cost:'+30',  perks:'Gun Nut 4' },
+      { name:'Automatic Piston',prefix:'Automatic',         effects:'+2 Fire Rate, Reduce Range by 1 step',             weight:'+2', cost:'+75',  perks:'Gun Nut 2' },
+    ],
+    'Barrel Mods': [
+      { name:'Snubnose',        prefix:'Snub-nosed',        effects:'Gain Inaccurate',                                   weight:'-1', cost:'—',    perks:'—' },
+      { name:'Bull Barrel',     prefix:'Bull Barrel',       effects:'Gain Reliable',                                     weight:'—',  cost:'+10',  perks:'Gun Nut 3' },
+      { name:'Long',            prefix:'Long',              effects:'Increase Range by 1 step',                          weight:'+1', cost:'+20',  perks:'Gun Nut 1' },
+      { name:'Ported',          prefix:'Ported',            effects:'Increase Range by 1 step, +1 Fire Rate',            weight:'+1', cost:'+35',  perks:'Gun Nut 4' },
+      { name:'Vented',          prefix:'Vented',            effects:'Increase Range by 1 step, +1 Fire Rate, Gain Reliable', weight:'+1', cost:'+36', perks:'Gun Nut 4' },
+      { name:'Sawed-Off',       prefix:'Sawed Off',         effects:'Remove Two-Handed, Gain Close Quarters',            weight:'-2', cost:'+3',   perks:'—' },
+      { name:'Shielded Barrel', prefix:'Shielded',          effects:'+1 DC damage',                                      weight:'—',  cost:'+37',  perks:'Gun Nut 3, Repair' },
+      { name:'Finned',          prefix:'Finned',            effects:'+1 DC damage, Increase Range by 1 step',            weight:'+2', cost:'+15',  perks:'Gun Nut 2' },
+    ],
+    'Magazine Mods': [
+      { name:'Large Magazine',       prefix:'High Capacity',       effects:'+1 Fire Rate, Unreliable',  weight:'+1', cost:'-3',   perks:'Gun Nut 2' },
+      { name:'Quick-Eject Mag',      prefix:'Quick',               effects:'Gain Reliable',             weight:'—',  cost:'+8',   perks:'Gun Nut 1' },
+      { name:'Large Quick-Eject Mag',prefix:'Quick High Capacity', effects:'+1 Fire Rate',              weight:'+1', cost:'+23',  perks:'Gun Nut 2' },
+    ],
+    'Grip Mods': [
+      { name:'Comfort Grip',         prefix:'Comfort',        effects:'Remove Inaccurate',                      weight:'—',  cost:'+6',   perks:'—' },
+      { name:"Sharpshooter's Grip",  prefix:"Sharpshooter's", effects:'Remove Inaccurate, Add Piercing 1',      weight:'—',  cost:'+10',  perks:'Gun Nut 1' },
+    ],
+    'Stock Mods': [
+      { name:'Full Stock',               prefix:'—',               effects:'Gain Two-Handed, Remove Inaccurate',                       weight:'+1', cost:'+10', perks:'—' },
+      { name:"Marksman's Stock",         prefix:"Marksman's",      effects:'Gain Two-Handed, Remove Inaccurate, Gain Accurate',        weight:'+2', cost:'+20', perks:'Gun Nut 2' },
+      { name:'Recoil Compensating Stock',prefix:'Recoil Compensated',effects:'Gain Two-Handed, Remove Inaccurate, +1 Fire Rate',      weight:'+2', cost:'+3',  perks:'Gun Nut 3' },
+    ],
+    'Sight Mods': [
+      { name:'Reflex Sight',         prefix:'Tactical',      effects:'May re-roll hit location die',                           weight:'—',  cost:'+14', perks:'—' },
+      { name:'Short Scope',          prefix:'Scoped',        effects:'Gain Accurate',                                          weight:'+1', cost:'+11', perks:'—' },
+      { name:'Long Scope',           prefix:'Scoped',        effects:'Gain Accurate, Increase Range by 1 step',                weight:'+1', cost:'+29', perks:'Science! 2' },
+      { name:'Short Night Vision',   prefix:'Night Vision',  effects:'Gain Accurate, Gain Night Vision',                       weight:'+1', cost:'+38', perks:'Science! 2' },
+      { name:'Long Night Vision',    prefix:'Night Vision',  effects:'Gain Accurate, Gain Night Vision, Increase Range by 1',  weight:'+1', cost:'+50', perks:'Science! 3' },
+      { name:'Recon Scope',          prefix:'Recon',         effects:'Gain Accurate, Gain Recon',                              weight:'+1', cost:'+59', perks:'Science! 3' },
+    ],
+    'Muzzle Mods': [
+      { name:'Bayonet',     prefix:'Bayoneted',   effects:'Melee weapon, deals 4 DC Piercing 1 physical damage',  weight:'+2', cost:'+10', perks:'—' },
+      { name:'Compensator', prefix:'Compensated', effects:'Remove Inaccurate',                                    weight:'+1', cost:'+15', perks:'Gun Nut 1' },
+      { name:'Muzzle Break',prefix:'Muzzled',     effects:'Remove Inaccurate, +1 Fire Rate',                      weight:'+1', cost:'+30', perks:'Gun Nut 1' },
+      { name:'Suppressor',  prefix:'Suppressed',  effects:'Gain Suppressed',                                      weight:'+2', cost:'+45', perks:'Gun Nut 2' },
+    ],
+  },
+  energy: {
+    'Capacitor Mods': [
+      { name:'Beta Wave Tuner',    prefix:'Incendiary', effects:'Gain Persistent',               weight:'—',  cost:'+30', perks:'—' },
+      { name:'Boosted Capacitor',  prefix:'Boosted',    effects:'+1 DC, -1 Fire Rate',           weight:'—',  cost:'+35', perks:'—' },
+      { name:'Photon Exciter',     prefix:'Excited',    effects:'Gain Vicious',                  weight:'—',  cost:'+30', perks:'Science! 1' },
+      { name:'Photon Agitator',    prefix:'Agitated',   effects:'+1 DC, Gain Vicious',           weight:'+1', cost:'+35', perks:'Science! 2' },
+    ],
+    'Barrel Mods': [
+      { name:'Bracketed Short Barrel', prefix:'—',          effects:'Allows weapon to take a Muzzle mod',                          weight:'—',  cost:'+6',  perks:'—' },
+      { name:'Long Barrel',            prefix:'Long',       effects:'Remove Close Quarters, Increase Range by 1 step',             weight:'+2', cost:'+20', perks:'—' },
+      { name:'Splitter',               prefix:'Scattergun', effects:'-1 DC, Gain Spread, Gain Inaccurate',                         weight:'+1', cost:'+31', perks:'—' },
+      { name:'Automatic Barrel',       prefix:'Automatic',  effects:'-1 DC, Remove CQ, Increase Range 1, +1 Fire Rate',           weight:'+1', cost:'+24', perks:'Science! 1' },
+      { name:'Bracketed Long Barrel',  prefix:'—',          effects:'Remove CQ, Increase Range 1, allows Muzzle mod',             weight:'+2', cost:'+25', perks:'Science! 1' },
+      { name:'Improved Barrel',        prefix:'Improved',   effects:'+1 DC',                                                       weight:'+1', cost:'+26', perks:'Science! 1' },
+      { name:'Sniper Barrel',          prefix:'Sniper',     effects:'+2 DC, Remove CQ, Increase Range 1, -1 Fire Rate',           weight:'+2', cost:'+30', perks:'Science! 1' },
+      { name:'Flamer Barrel',          prefix:'Thrower',    effects:'-2 DC, +2 Fire Rate, Gain Burst/Spread, Gain Inaccurate',    weight:'+1', cost:'+35', perks:'Science! 2' },
+    ],
+    'Grip Mods': [
+      { name:"Sharpshooter's Grip", prefix:"Sharpshooter's", effects:'Remove Inaccurate, Add Piercing 1', weight:'—', cost:'+10', perks:'Gun Nut 1' },
+    ],
+    'Stock Mods': [
+      { name:'Standard Stock',           prefix:'—',               effects:'Gain Two-Handed, Remove Inaccurate, Remove CQ',              weight:'+1', cost:'+10', perks:'—' },
+      { name:'Full Stock',               prefix:'—',               effects:'Gain Piercing 1, Remove Close Quarters',                      weight:'+1', cost:'+15', perks:'—' },
+      { name:"Marksman's Stock",         prefix:"Marksman's",      effects:'Gain Two-Handed, Remove Inaccurate, Gain Accurate, Remove CQ',weight:'+2', cost:'+20', perks:'Gun Nut 2' },
+      { name:'Recoil Compensating Stock',prefix:'Recoil Compensated',effects:'Gain Two-Handed, Remove Inaccurate, +1 Fire Rate, Remove CQ',weight:'+2',cost:'+3',  perks:'Gun Nut 3' },
+    ],
+    'Sight Mods': [
+      { name:'Reflex Sight',        prefix:'Tactical',     effects:'May re-roll hit location die',                           weight:'—',  cost:'+14', perks:'—' },
+      { name:'Short Scope',         prefix:'Scoped',       effects:'Gain Accurate',                                          weight:'+1', cost:'+11', perks:'—' },
+      { name:'Long Scope',          prefix:'Scoped',       effects:'Gain Accurate, Increase Range by 1 step',                weight:'+1', cost:'+29', perks:'Science! 2' },
+      { name:'Short Night Vision',  prefix:'Night Vision', effects:'Gain Accurate, Gain Night Vision',                       weight:'+1', cost:'+38', perks:'Science! 2' },
+      { name:'Long Night Vision',   prefix:'Night Vision', effects:'Gain Accurate, Gain Night Vision, Increase Range by 1',  weight:'+1', cost:'+50', perks:'Science! 3' },
+      { name:'Recon Scope',         prefix:'Recon',        effects:'Gain Accurate, Gain Recon',                              weight:'+1', cost:'+59', perks:'Science! 3' },
+    ],
+    'Muzzle Mods': [
+      { name:'Beam Splitter',          prefix:'Scattered',  effects:'-1 DC, Gain Spread, -1 Fire Rate, Gain Inaccurate, Reduce Range', weight:'+1', cost:'+15', perks:'Science! 1' },
+      { name:'Beam Focuser',           prefix:'Focused',    effects:'Increase Range by 1 step',                                        weight:'+1', cost:'+20', perks:'Science! 1' },
+      { name:'Gyro Compensating Lens', prefix:'Targeting',  effects:'+1 Fire Rate, Remove Inaccurate',                                 weight:'+1', cost:'+25', perks:'Science! 1' },
+    ],
+  },
+};
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let cat='all', view='table', sortKey='name', sortDir=1, expanded=null, modsOpen={small_guns:false,energy:false};
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+function init() {
+  const cats = ['small_guns','energy','big_guns','melee','unarmed'];
+  let total = 0;
+  cats.forEach(c => {
+    const n = WEAPONS.filter(w=>w.cat===c).length;
+    document.getElementById('cnt-'+c).textContent = n;
+    document.getElementById('sb-'+c).textContent = n;
+    total += n;
+  });
+  document.getElementById('cnt-all').textContent = total;
+  document.getElementById('sb-all').textContent = total;
+  filter();
+}
+
+function showCat(c) {
+  cat=c; expanded=null;
+  const tabs = ['all','small_guns','energy','big_guns','melee','unarmed'];
+  document.querySelectorAll('.cat-tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===c));
+  document.querySelectorAll('.sb-link').forEach((l,i)=>l.classList.toggle('active',tabs[i]===c));
+  filter();
+}
+
+function setView(v) {
+  view=v;
+  document.getElementById('btn-tbl').classList.toggle('active',v==='table');
+  document.getElementById('btn-crd').classList.toggle('active',v==='cards');
+  filter();
+}
+
+function filter() {
+  const q = document.getElementById('search-box').value.toLowerCase();
+  const dtype = document.getElementById('f-dtype').value;
+  const range = document.getElementById('f-range').value;
+  const rar = document.getElementById('f-rar').value;
+
+  let list = WEAPONS.filter(w => {
+    if (cat!=='all' && w.cat!==cat) return false;
+    if (q && !w.name.toLowerCase().includes(q) && !w.dmgEffects.toLowerCase().includes(q) && !w.qualities.join(' ').toLowerCase().includes(q)) return false;
+    if (dtype && w.dmgType!==dtype) return false;
+    if (range && w.range!==range) return false;
+    if (rar!=='' && String(w.rarity)!==rar) return false;
+    return true;
+  });
+
+  list.sort((a,b) => {
+    let av=a[sortKey]??-1, bv=b[sortKey]??-1;
+    if(typeof av==='string') av=av.toLowerCase();
+    if(typeof bv==='string') bv=bv.toLowerCase();
+    return av<bv?-sortDir:av>bv?sortDir:0;
+  });
+
+  document.getElementById('shown-count').textContent = list.length;
+  render(list);
+}
+
+function setSort(k) {
+  sortDir = sortKey===k ? -sortDir : 1;
+  sortKey = k;
+  filter();
+}
+
+// ═══════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════
+const CAT_TITLES = { all:'All Weapons', small_guns:'Small Guns', energy:'Energy Weapons', big_guns:'Big Guns', melee:'Melee Weapons', unarmed:'Unarmed' };
+const CAT_DESCS = {
+  all:'All weapons from the Fallout 2D20 core rulebook. Click any row to expand full stats. Use the category tabs or sidebar to filter by weapon type.',
+  small_guns:'Conventional firearms using physical ammunition. Modded with the Repair skill. Require Gun Nut perks for most advanced modifications.',
+  energy:'High-tech weapons dealing Energy or Radiation damage. Modded with the Science skill. Many can accept capacitor, barrel, and optic upgrades.',
+  big_guns:'Heavy weapons requiring both hands. Devastating firepower offset by weight and rarity. Most are Two-Handed and many have the Inaccurate quality.',
+  melee:'Close-combat weapons used in hand-to-hand combat. No ammunition required. Damage type is generally Physical, though energy variants exist.',
+  unarmed:'Bare-hand and glove-slot weapons. Always available — you\'re never truly unarmed in the Wasteland.',
+};
+
+function render(list) {
+  const out = document.getElementById('items-output');
+
+  // Rule boxes
+  let ruleHtml = '';
+  if (cat==='all'||cat==='small_guns'||cat==='energy') {
+    ruleHtml += `<div class="rule-grid">`;
+    if (cat==='all'||cat==='small_guns') ruleHtml += `
+      <div class="rule-box">
+        <div class="rule-title">🔧 Small Guns Modding</div>
+        Small gun mods are installed with the <strong>Repair</strong> skill. Most mods require <strong>Gun Nut</strong> perks at varying ranks. Only one mod per slot (receiver, barrel, magazine, grip, stock, sight, muzzle).
+      </div>`;
+    if (cat==='all'||cat==='energy') ruleHtml += `
+      <div class="rule-box" style="border-left-color:var(--blue)">
+        <div class="rule-title" style="color:var(--blue)">⚡ Energy Weapons Modding</div>
+        Energy weapon mods are installed with the <strong>Science</strong> skill. Barrel upgrades significantly change weapon behaviour. Most advanced mods require <strong>Science!</strong> perks.
+      </div>`;
+    ruleHtml += `</div>`;
+  }
+
+  // Mods panels (only when relevant cat is shown)
+  let modsHtml = '';
+  if (cat==='small_guns'||cat==='all') modsHtml += renderModsToggle('small_guns','Small Gun Mods');
+  if (cat==='energy'||cat==='all') modsHtml += renderModsToggle('energy','Energy Weapon Mods');
+
+  if (!list.length) {
+    out.innerHTML = `<div class="cat-header"><div class="cat-title">${CAT_TITLES[cat]}</div></div>${ruleHtml}${modsHtml}<div class="no-results"><span class="big">// NO DATA //</span>No weapons match your current filters.</div>`;
+    return;
+  }
+
+  let html = `<div class="cat-header"><div class="cat-title">${CAT_TITLES[cat]}</div><div class="cat-desc">${CAT_DESCS[cat]}</div></div>${ruleHtml}${modsHtml}`;
+  html += view==='table' ? renderTable(list) : renderCards(list);
+  out.innerHTML = html;
+
+  // Re-attach mods toggle state
+  ['small_guns','energy'].forEach(k => {
+    const p = document.getElementById('mods-panel-'+k);
+    const b = document.getElementById('mods-btn-'+k);
+    if (p&&modsOpen[k]) { p.classList.add('open'); b&&b.classList.add('open'); }
+  });
+}
+
+function renderModsToggle(key, label) {
+  const modsData = MODS[key];
+  if (!modsData) return '';
+  let cats = '';
+  for (const [secName, mods] of Object.entries(modsData)) {
+    cats += `<div class="mods-cat-title">${secName}</div>
+    <table class="mods-table"><thead><tr>
+      <th>Mod Name</th><th>Prefix</th><th>Effects</th><th>Wt</th><th>Cost</th><th>Perks Required</th>
+    </tr></thead><tbody>`;
+    mods.forEach(m => {
+      cats += `<tr>
+        <td>${m.name}</td>
+        <td style="color:var(--text-dim);font-size:0.7rem">${m.prefix}</td>
+        <td style="line-height:1.45">${m.effects}</td>
+        <td style="text-align:center">${m.weight}</td>
+        <td style="text-align:center;color:var(--amber)">${m.cost}</td>
+        <td>${m.perks!=='—'?`<span class="perk-badge">${m.perks}</span>`:'<span style="color:var(--text-dim)">—</span>'}</td>
+      </tr>`;
+    });
+    cats += '</tbody></table>';
+  }
+  return `
+    <button class="mods-toggle" id="mods-btn-${key}" onclick="toggleMods('${key}')">
+      ▸ ${label} <span style="opacity:0.5;font-size:0.6rem">(CLICK TO EXPAND)</span>
+    </button>
+    <div class="mods-panel" id="mods-panel-${key}">${cats}</div>`;
+}
+
+function toggleMods(key) {
+  modsOpen[key] = !modsOpen[key];
+  const p = document.getElementById('mods-panel-'+key);
+  const b = document.getElementById('mods-btn-'+key);
+  p&&p.classList.toggle('open',modsOpen[key]);
+  b&&b.classList.toggle('open',modsOpen[key]);
+  if (b) b.querySelector('span').textContent = modsOpen[key]?'(CLICK TO COLLAPSE)':'(CLICK TO EXPAND)';
+}
+
+function renderTable(list) {
+  const isRanged = (w) => w.cat==='small_guns'||w.cat==='energy'||w.cat==='big_guns';
+  const a = k=>`<span class="sa">${sortKey===k?(sortDir===1?'▲':'▼'):'⇅'}</span>`;
+  let h = `<div class="items-table-wrap"><table class="items-table"><thead><tr>
+    <th onclick="setSort('name')" class="${sortKey==='name'?'sorted':''}">Weapon ${a('name')}</th>
+    <th onclick="setSort('cat')" class="${sortKey==='cat'?'sorted':''}">Type ${a('cat')}</th>
+    <th onclick="setSort('dmg')" class="${sortKey==='dmg'?'sorted':''}">DMG ${a('dmg')}</th>
+    <th>Dmg Effects</th>
+    <th onclick="setSort('dmgType')" class="${sortKey==='dmgType'?'sorted':''}">Dmg Type ${a('dmgType')}</th>
+    <th onclick="setSort('fireRate')" class="${sortKey==='fireRate'?'sorted':''}">FR ${a('fireRate')}</th>
+    <th onclick="setSort('range')" class="${sortKey==='range'?'sorted':''}">Range ${a('range')}</th>
+    <th>Qualities</th>
+    <th onclick="setSort('weight')" class="${sortKey==='weight'?'sorted':''}">Wt ${a('weight')}</th>
+    <th onclick="setSort('cost')" class="${sortKey==='cost'?'sorted':''}">Caps ${a('cost')}</th>
+    <th onclick="setSort('rarity')" class="${sortKey==='rarity'?'sorted':''}">Rarity ${a('rarity')}</th>
+  </tr></thead><tbody>`;
+
+  list.forEach(w => {
+    const exp = expanded===w.id;
+    const catLabel = {small_guns:'Small Guns',energy:'Energy',big_guns:'Big Guns',melee:'Melee',unarmed:'Unarmed'}[w.cat];
+    h += `<tr class="${exp?'expanded':''}" onclick="toggleExp('${w.id}')">
+      <td><div class="iname">${w.name}</div></td>
+      <td style="font-size:0.68rem;color:var(--text-dim)">${catLabel}</td>
+      <td><div class="dmg-val">${w.dmg} DC</div></td>
+      <td><div style="font-size:0.7rem;color:var(--text-dim)">${fmtDmgEffects(w.dmgEffects)}</div></td>
+      <td>${dtypeBadge(w.dmgType)}</td>
+      <td><div class="fr-val">${w.fireRate!==null?w.fireRate:'—'}</div></td>
+      <td>${w.range?rangeBadge(w.range):'<span style="color:var(--text-dim);font-size:0.7rem">—</span>'}</td>
+      <td>${qualityTags(w.qualities)}</td>
+      <td style="font-size:0.73rem;color:var(--text-dim)">${w.weight||'—'}</td>
+      <td><div class="cost-val">${w.cost||'—'}</div></td>
+      <td>${rPips(w.rarity)}</td>
+    </tr>`;
+    if (exp) h += `<tr class="detail-row"><td colspan="11">${detail(w)}</td></tr>`;
+  });
+
+  return h+'</tbody></table></div>';
+}
+
+function renderCards(list) {
+  let h = '<div class="items-cards">';
+  list.forEach(w => {
+    const exp = expanded===w.id;
+    h += `<div class="item-card ${exp?'selected':''}" onclick="toggleExp('${w.id}')">
+      <div class="ic-name">${w.name}</div>
+      <div class="ic-stats">
+        <div class="ic-stat"><div class="ic-stat-val" style="color:var(--red)">${w.dmg}</div><div class="ic-stat-label">DC</div></div>
+        <div class="ic-stat"><div class="ic-stat-val" style="color:var(--amber)">${w.fireRate!==null?w.fireRate:'—'}</div><div class="ic-stat-label">FR</div></div>
+        <div class="ic-stat"><div class="ic-stat-val" style="font-size:1rem;padding-top:3px">${w.range||'—'}</div><div class="ic-stat-label">Range</div></div>
+        <div class="ic-stat"><div class="ic-stat-val" style="color:var(--amber);font-size:0.9rem;padding-top:3px">${w.cost||'—'}</div><div class="ic-stat-label">Caps</div></div>
+      </div>
+      <div style="margin-bottom:0.3rem">${dtypeBadge(w.dmgType)}</div>
+      <div class="ic-tags">${qualityTags(w.qualities)}</div>
+      <div style="margin-top:0.5rem">${rPips(w.rarity)}</div>
+    </div>`;
+    if (exp) h += `<div style="grid-column:1/-1;background:var(--panel3);border:1px solid rgba(245,166,35,0.2);border-top:2px solid var(--amber);margin-bottom:0.5rem">${detail(w)}</div>`;
+  });
+  return h+'</div>';
+}
+
+function detail(w) {
+  const catLabel = {small_guns:'Small Guns',energy:'Energy Weapons',big_guns:'Big Guns',melee:'Melee Weapons',unarmed:'Unarmed'}[w.cat];
+  const modNote = w.cat==='small_guns' ? 'Modded using <strong>Repair</strong> skill. See Small Gun Mods table above.'
+                : w.cat==='energy'     ? 'Modded using <strong>Science</strong> skill. See Energy Weapon Mods table above.'
+                : 'No standard mod slots.';
+  return `<div class="detail-inner">
+    <div>
+      <div class="d-title">Weapon Statistics</div>
+      <div class="d-row"><span class="key">Category</span><span class="val">${catLabel}</span></div>
+      <div class="d-row"><span class="key">Damage Rating</span><span class="val" style="color:var(--red)">${w.dmg} DC</span></div>
+      <div class="d-row"><span class="key">Damage Effects</span><span class="val" style="font-size:0.72rem">${w.dmgEffects!=='—'?w.dmgEffects:'None'}</span></div>
+      <div class="d-row"><span class="key">Damage Type</span><span class="val">${w.dmgType}</span></div>
+      <div class="d-row"><span class="key">Fire Rate</span><span class="val">${w.fireRate!==null?w.fireRate:'N/A'}</span></div>
+      <div class="d-row"><span class="key">Range</span><span class="val">${w.range?{C:'Close',M:'Medium',L:'Long'}[w.range]:'Melee / Close'}</span></div>
+      <div class="d-row"><span class="key">Weight</span><span class="val">${w.weight||0} lbs</span></div>
+      <div class="d-row"><span class="key">Cost</span><span class="val">${w.cost||0} caps</span></div>
+      <div class="d-row"><span class="key">Rarity</span><span class="val">${w.rarity} / 5</span></div>
+    </div>
+    <div>
+      <div class="d-title">Qualities</div>
+      <div class="d-qualities">${w.qualities.length?w.qualities.map(q=>`<span class="quality-tag notable">${q}</span>`).join(''):'<span style="color:var(--text-dim);font-size:0.72rem">No special qualities.</span>'}</div>
+      <div class="d-title" style="margin-top:1rem">Modding</div>
+      <div class="d-rules">${modNote}</div>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function fmtDmgEffects(e) {
+  if (!e||e==='—') return '<span style="color:var(--text-dim)">—</span>';
+  return e.split(',').map(s=>`<span class="deff-tag">${s.trim()}</span>`).join('');
+}
+
+function dtypeBadge(t) {
+  const map = {
+    'Physical':'dtype-phys','Energy':'dtype-energy','Radiation':'dtype-rad','Physical/Energy':'dtype-both'
+  };
+  return `<span class="${map[t]||'dtype-phys'}">${t}</span>`;
+}
+
+function rangeBadge(r) {
+  const lbl = {C:'Close',M:'Medium',L:'Long'};
+  return `<span class="range-badge range-${r}">${lbl[r]||r}</span>`;
+}
+
+const NOTABLE_QUALITIES = ['Blast','Burst','Vicious','Gatling','Piercing 1','Breaking','Persistent','Spread','Accurate','Suppressed','Debilitating','Unreliable'];
+function qualityTags(qs) {
+  if (!qs||!qs.length) return '<span style="color:var(--text-dim);font-size:0.65rem">—</span>';
+  return qs.map(q=>`<span class="quality-tag ${NOTABLE_QUALITIES.includes(q)?'notable':''}">${q}</span>`).join('');
+}
+
+function rPips(r) {
+  return `<div class="rarity">${Array.from({length:5},(_,i)=>`<div class="rarity-pip ${i<r?'filled':''}"></div>`).join('')}</div>`;
+}
+
+function toggleExp(id) {
+  expanded = expanded===id ? null : id;
+  filter();
+  if (expanded) setTimeout(()=>{document.querySelector('.detail-inner')?.scrollIntoView({behavior:'smooth',block:'nearest'})},60);
+}
+
+init();
+</script>
+</body>
+</html>
